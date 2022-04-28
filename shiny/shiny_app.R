@@ -20,7 +20,7 @@ setwd(here())
 ########## Get the datasets from the feature importance workflow
 
 # Raw dataset
-df <- read.csv(here("data", "sageres.csv"))
+df <- read.csv(here("data", "sageres.RDS"))
 # Main aggregated dataset
 df_wy <- read.csv(here("shiny", "aggregated_datasets", "df_wy.csv"))
 # Aggregated dataset for climate scenario 0
