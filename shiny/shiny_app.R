@@ -22,19 +22,21 @@ setwd(here())
 # Raw dataset
 df <- read.csv(here("data", "sageres.RDS"))
 # Main aggregated dataset
-df_wy <- read.csv(here("shiny", "aggregated_datasets", "df_wy.csv"))
+df_wy <- readRDS(here("shiny", "aggregated_datasets", "df_wy.RDS")) %>% as.data.frame()
 # Aggregated dataset for climate scenario 0
-df_wy0 <- read.csv(here("shiny", "aggregated_datasets", "df_wy0.csv"))
+df_wy0 <- readRDS(here("shiny", "aggregated_datasets", "df_wy0.RDS")) %>% as.data.frame()
 # Aggregated dataset for climate scenario 2
-df_wy2 <- read.csv(here("shiny", "aggregated_datasets", "df_wy2.csv"))
+df_wy2 <- readRDS(here("shiny", "aggregated_datasets", "df_wy2.RDS")) %>% as.data.frame()
 
 all_datasets <- c("df", "df_wy", "df_wy0", "df_wy2")
 
 # Get the variable importance rank datasets
-imp_wy0 <- read.csv(here("shiny", "aggregated_datasets", "imp_wy0.csv")) %>% 
-  arrange(Rank)
-imp_wy2 <- read.csv(here("shiny", "aggregated_datasets", "imp_wy2.csv")) %>% 
-  arrange(Rank)
+# imp_wy0 <- read.csv(here("shiny", "aggregated_datasets", "imp_wy0.csv")) %>% 
+#   arrange(Rank)
+imp_wy0 <- readRDS(here("shiny", "aggregated_datasets", "imp_wy0.RDS")) %>% arrange(Rank)
+# imp_wy2 <- read.csv(here("shiny", "aggregated_datasets", "imp_wy2.csv")) %>% 
+#   arrange(Rank)
+imp_wy2 <- readRDS(here("shiny", "aggregated_datasets", "imp_wy2.RDS")) %>% arrange(Rank)
 
 ########## User Inputs
 factor_vars <- c("stratumID", "scen", "topo")
@@ -48,8 +50,9 @@ df_wy2[,factor_vars] <- lapply(df_wy2[,factor_vars], factor)
 
 ######### Import the metadata and create a table out of it
 
-metadata <- read.csv(here("shiny", "aggregated_datasets", "metadata.csv")) %>% 
-  select("variable", "full_name", "units", "description")
+metadata <- readRDS(here("shiny", "aggregated_datasets", "metadata.RDS")) %>% 
+  select("variable", "full_name", "units", "description") %>% 
+  as.data.frame()
 
 ######### Text for the welcome page
 

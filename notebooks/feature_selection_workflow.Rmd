@@ -379,6 +379,9 @@ Save the above importance dataframes to be used in the Shiny App.
 
 # write.csv(imp_wy0, file = here("shiny", "aggregated_datasets", "imp_wy0.csv"), row.names = FALSE)
 # write.csv(imp_wy2, file = here("shiny", "aggregated_datasets", "imp_wy2.csv"), row.names = FALSE)
+
+saveRDS(imp_wy0, file = here("shiny", "aggregated_datasets", "imp_wy0.RDS"))
+saveRDS(imp_wy2, file = here("shiny", "aggregated_datasets", "imp_wy2.RDS"))
 ```
 
 

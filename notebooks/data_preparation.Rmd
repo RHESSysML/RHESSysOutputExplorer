@@ -172,13 +172,17 @@ Along with this workflow, this repo also contains a Shiny App. The Shiny App can
 
 # Create and export dataframes that change the response column name back to the variable itself to be used in the Shiny app.
 
-# df_export <- rename(.data = df_wy, !!response_var := response)
-# df_export_wy0 <- rename(.data = df_wy0, !!response_var := response)
-# df_export_wy2 <- rename(.data = df_wy2, !!response_var := response)
+df_export <- rename(.data = df_wy, !!response_var := response)
+df_export_wy0 <- rename(.data = df_wy0, !!response_var := response)
+df_export_wy2 <- rename(.data = df_wy2, !!response_var := response)
 
 # write.csv(df_export, file = here("shiny", "aggregated_datasets", "df_wy.csv"), row.names = FALSE)
 # write.csv(df_export_wy0, file = here("shiny", "aggregated_datasets", "df_wy0.csv"), row.names = FALSE)
 # write.csv(df_export_wy2, file = here("shiny", "aggregated_datasets", "df_wy2.csv"), row.names = FALSE)
+
+saveRDS(df_export, file = here("shiny", "aggregated_datasets", "df_wy.RDS"))
+saveRDS(df_export_wy0, file = here("shiny", "aggregated_datasets", "df_wy0.RDS"))
+saveRDS(df_export_wy2, file = here("shiny", "aggregated_datasets", "df_wy2.RDS"))
 ```
 
 ```{r}
