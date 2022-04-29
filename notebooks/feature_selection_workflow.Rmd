@@ -555,7 +555,7 @@ plot_min_depth_distribution(min_depth_frame,
                             mean_sample = "relevant_trees")
 ```
 
-SHapley Additive exPlanations (SHAP) values interpret the marginal contributions of individual features. This allows visualization of the direction of the relationships between predictors and the response variable.
+Lastly, SHapley Additive exPlanations (SHAP) values interpret the marginal contributions of individual features. This allows visualization of the direction of the relationships between predictors and the response variable.
 
 ```{r}
 explain0 <- explain(object = rf_wy0$finalModel,
@@ -565,36 +565,6 @@ explain0 <- explain(object = rf_wy0$finalModel,
 autoplot(explain0, type = "contribution", feature = "response")
 ```
 
-Lastly, while permutation importance is an appropriate measurement for this use case and many models beyond just random forest, this approach has been shown to be biased towards correlated predictor variables (Strobl et al. 2008). Conditional permutation importance (CPI) is a measure that seeks to assess importance of each feature *conditionally* on the other features in the model. This approach tends to offer less biased results and has been used to assess ecosystem dynamics (Strobl et al. 2008). Here we use a recent implementation of CPI developed by Strobl and Debeer (2020), via their `permimp` package. Previously, this bias was addressed by removing highly correlated variables from the datasets.
-
-```{r permimp, warning = FALSE}
-# imp_wy0 <- permimp(rf_wy0$finalModel, do_check = FALSE, progressBar = FALSE)
-# 
-# imp_wy2 <- permimp(rf_wy2$finalModel, do_check = FALSE, progressBar = FALSE)
-
-# imp_to_table <- function(imp) {
-#   df_permimp <- imp$values %>%
-#     data.frame() %>% 
-#     rownames_to_column("Variable") %>% 
-#     rename("Importance" = ".") %>% 
-#     mutate(Rank = rank(-Importance))
-# }
-# 
-# df_imp_wy0 <- imp_to_table(imp_wy0)
-# df_imp_wy2 <- imp_to_table(imp_wy2)
-
-# plot_imp <- function(imp_df) {
-#   df_name <- deparse(substitute(imp_df))
-#   ggplot(data = imp_df, aes(x = Importance, y = reorder(Variable, Importance))) +
-#     geom_col() +
-#     theme_light() +
-#     theme(legend.position = "none",
-#           axis.text.x = element_blank()) +
-#     labs(title = paste0("Variable Importance for \n", df_name),
-#          x = "Importance",
-#          y = "Variable")
-# }
-```
 
 # References
 
