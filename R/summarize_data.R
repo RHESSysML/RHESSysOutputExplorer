@@ -1,3 +1,9 @@
+#' @title Summarize a Data Frame
+#' @description Creates a datatable object that summarizes any data table, providing information including variable name, count of observations, mean, standard deviation, min, max, range, and class
+#'
+#' @param df Data frame object
+#'
+#' @return DT::datatable object
 summarize_data <- function(df) {
   df_name <- deparse(substitute(df))
   describe(df) %>% 
