@@ -164,7 +164,7 @@ metadata <- arrange(metadata, variable)
 Save the metadata dataframe as a csv file to be used in the shiny app.
 
 ```{r}
-write.csv(metadata, file = here("shiny", "aggregated_datasets", "metadata.csv"))
+saveRDS(metadata, file = here("shiny", "aggregated_datasets", "metadata.RDS"))
 ```
 
 
