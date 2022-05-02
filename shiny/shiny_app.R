@@ -31,12 +31,13 @@ df_wy2 <- readRDS(here("shiny", "aggregated_datasets", "df_wy2.RDS")) %>% as.dat
 all_datasets <- c("df", "df_wy", "df_wy0", "df_wy2")
 
 # Get the variable importance rank datasets
-# imp_wy0 <- read.csv(here("shiny", "aggregated_datasets", "imp_wy0.csv")) %>% 
-#   arrange(Rank)
-imp_wy0 <- readRDS(here("shiny", "aggregated_datasets", "imp_wy0.RDS")) %>% arrange(Rank)
-# imp_wy2 <- read.csv(here("shiny", "aggregated_datasets", "imp_wy2.csv")) %>% 
-#   arrange(Rank)
-imp_wy2 <- readRDS(here("shiny", "aggregated_datasets", "imp_wy2.RDS")) %>% arrange(Rank)
+
+imp_wy0 <- readRDS(here("shiny", "aggregated_datasets", "imp_wy0.RDS")) %>% 
+  arrange(Rank) %>% 
+  as.data.frame()
+imp_wy2 <- readRDS(here("shiny", "aggregated_datasets", "imp_wy2.RDS")) %>% 
+  arrange(Rank) %>% 
+  as.data.frame()
 
 ########## User Inputs
 factor_vars <- c("stratumID", "scen", "topo")
@@ -53,6 +54,10 @@ df_wy2[,factor_vars] <- lapply(df_wy2[,factor_vars], factor)
 metadata <- readRDS(here("shiny", "aggregated_datasets", "metadata.RDS")) %>% 
   select("variable", "full_name", "units", "description") %>% 
   as.data.frame()
+
+######### Source functions
+
+source(here("R", "plot_imp.R"))
 
 ######### Text for the welcome page
 
@@ -160,7 +165,7 @@ ui <- fluidPage(
              tabPanel("Variable Importance",
                       tags$h3("Random Forest Variable Importance Output:"),
                       tags$h4("Your Response Variable: Net Primary Productivity (NPP)"),
-                      img(src = "importance_plots.png", height = 800, width = 800),
+                      plotOutput(outputId = "imp_plot", height = 550),
                       tags$h6(importance_caption)),
              tabPanel("Visualizations",
                       sidebarPanel(stratum_sel,
@@ -222,6 +227,12 @@ server <- function(input, output) {
            y = response_var) +
       facet_wrap(~ quantile) +
       theme(text = element_text(size = 17))
+  })
+  
+  output$imp_plot <- renderPlot({
+    
+    plot_imp(imp_wy0) + plot_imp(imp_wy2)
+    
   })
   
   output$metadata_DT <- DT::renderDataTable({
