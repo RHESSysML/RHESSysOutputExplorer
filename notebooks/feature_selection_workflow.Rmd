@@ -353,7 +353,7 @@ rf_wy2 <- train(x = df_wy2_reduced %>% select(!response),
 ```{r save_rf_models}
 # save models for the Shiny app
 saveRDS(rf_wy0, here("data", "rf_wy0.RDS"))
-saveRDS(rf_wy2, here("models", "rf_wy2.RDS"))
+saveRDS(rf_wy2, here("data", "rf_wy2.RDS"))
 ```
 
 Assessing feature importance is a complex task with many possible approaches. Tree based models like random forest offer convenient "split-improvement" measures, like mean increase in purity and minimum depth, which are intrinsically derived during model construction. However, these have been shown to be biased towards variables with many categories or large value ranges (Strobl et al. 2007). Despite some of their shortcomings, these importance measures can provide insights are further explored at the end of this document.
