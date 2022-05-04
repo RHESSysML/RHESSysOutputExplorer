@@ -208,8 +208,8 @@ df_wy2_reduced <- df_wy2 %>%
 ```
 
 ```{r}
-save(df_wy0_preds, file = here("shiny", "aggregated_datasets", "df_wy0_preds.RDS"))
-save(df_wy2_preds, file = here("shiny", "aggregated_datasets", "df_wy2_preds.RDS"))
+saveRDS(df_wy0_preds, file = here("shiny", "aggregated_datasets", "df_wy0_preds.RDS"))
+saveRDS(df_wy2_preds, file = here("shiny", "aggregated_datasets", "df_wy2_preds.RDS"))
 ```
 
 

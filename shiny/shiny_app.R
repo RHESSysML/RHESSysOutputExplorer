@@ -12,6 +12,8 @@ library(shinythemes)
 library(lubridate)
 library(DT)
 
+library(plotly)
+
 #options(scipen=999)
 
 ########## Set the working directory
@@ -39,6 +41,22 @@ imp_wy2 <- readRDS(here("shiny", "aggregated_datasets", "imp_wy2.RDS")) %>%
   arrange(Rank) %>% 
   as.data.frame()
 
+# Get random forest models
+rf_wy0 <- readRDS(here("data", "rf_wy0.RDS"))
+rf_wy2 <- readRDS(here("data", "rf_wy2.RDS"))
+
+# Get predictor variables
+df_wy0_preds <- readRDS(here("shiny", "aggregated_datasets", "df_wy0_preds.RDS"))
+df_wy2_preds <- readRDS(here("shiny", "aggregated_datasets", "df_wy2_preds.RDS"))
+
+# Get reduced data frames
+df_wy0_reduced <- df_wy0 %>% 
+  select(c(rownames(rf_wy0$finalModel$importance)))
+
+df_wy2_reduced <- df_wy2 %>% 
+  select(c(rownames(rf_wy2$finalModel$importance)))
+
+
 ########## User Inputs
 factor_vars <- c("stratumID", "scen", "topo")
 response_var <- colnames(df_wy[1])
@@ -58,6 +76,7 @@ metadata <- readRDS(here("shiny", "aggregated_datasets", "metadata.RDS")) %>%
 ######### Source functions
 
 source(here("R", "plot_imp.R"))
+source(here("R", "plotly_partial_dependence.R"))
 
 ######### Text for the welcome page
 
@@ -133,6 +152,47 @@ quantile_slider <- sliderInput("quantile_sel",
                                max = 9,
                                value = 1)
 
+# Partial dependence plot inputs
+partial_dep_model <- selectInput("partial_dep_model",
+                                 label = tags$h4("Select your model"),
+                                 choices = c("Normal Scenario", "+2 Degree C Scenario"),
+                                 selected = "Normal Scenario",
+                                 multiple = FALSE)
+
+partial_dep_var1 <- selectInput("partial_dep_var1",
+                                label = tags$h4("Select Variable 1"),
+                                choices = unique(colnames(df_wy)),
+                                multiple = FALSE)
+
+partial_dep_var2 <- selectInput("partial_dep_var2",
+                                label = tags$h4("Select Variable 2"),
+                                choices = unique(colnames(df_wy)),
+                                multiple = FALSE)
+
+#   # Change possible input variables depending on model choice
+#   observe({
+#   x <- input$partial_dep_model
+# 
+#   if (x == "Normal Scenario") {
+#     preds <- df_wy0_preds
+#   }
+#   else if (x == "+2 Degree C Scenario") {
+#     preds <- df_wy2_preds
+#   }
+# 
+#   updateSelectInput("partial_dep_var1",
+#     label = tags$h4("Select Variable 1"),
+#     choices = preds,
+#     selected = head(preds, 1)
+#   )
+# 
+#   updateSelectInput("partial_dep_var2",
+#     label = tags$h4("Select Variable 2"),
+#     choices = preds,
+#     selected = tail(preds, 1)
+#   )
+# }),
+
 # Attempting to create a threshold slider. Work in progress.
 # threshold_slider <- sliderInput("threshold_sel",
 #                                 label = tags$h4("Where would you like to split the facet variable?"),
@@ -177,7 +237,13 @@ ui <- fluidPage(
                                    facet_variable,
                                    quantile_slider),
                       mainPanel("Visual Graph of your variable relationships:",
-                                plotOutput(outputId = "variable_plot", height = 700)))
+                                plotlyOutput(outputId = "variable_plot", height = 700))),
+             tabPanel("Partial Dependence",
+                      sidebarPanel(partial_dep_model,
+                                   partial_dep_var1,
+                                   partial_dep_var2),
+                      mainPanel("Bivariate Partial Depedence",
+                                plotlyOutput(outputId = "partial_dep_plot")))
   )
 )
 
@@ -216,17 +282,26 @@ server <- function(input, output) {
              wy %in% input$wy_sel[1]:input$wy_sel[2])
   })
   
-  output$variable_plot <- renderPlot({
-    ggplot(data = df_wy_reactive(), aes(x = !!input$independent_variable, 
-                                        y = df_wy_reactive()[,response_var])) +
+  output$variable_plot <- renderPlotly({
+    p <- ggplot(data = df_wy_reactive(), aes(
+      x = !!input$independent_variable,
+      y = df_wy_reactive()[, response_var]
+      )) +
       geom_point(aes(color = clim)) +
       geom_smooth(se = FALSE, method = lm, color = "#B251F1") +
-      scale_color_manual(values = c("0" = "#FEA346", 
-                                    "2" = "#4BA4A4")) +
-      labs(color = "Climate Scenario",
-           y = response_var) +
-      facet_wrap(~ quantile) +
+      scale_color_manual(values = c(
+        "0" = "#FEA346",
+        "2" = "#4BA4A4"
+        )) +
+      labs(
+        color = "Climate Scenario",
+        y = response_var
+      ) +
+      facet_wrap(~quantile) +
+      theme_light() +
       theme(text = element_text(size = 17))
+    
+    ggplotly(p)
   })
   
   output$imp_plot <- renderPlot({
@@ -263,6 +338,39 @@ server <- function(input, output) {
                                          'Table : ',
                                          tags$em('Dataset'),
                                          color = 'white'))
+    
+  })
+  
+  ### 3D Partial Dependence Plot
+  
+  # Get correct RF model based on input
+  partial_dep_model_obj <- reactive({
+    if (input$partial_dep_model == "Normal Scenario") {
+      rf_wy0$finalModel
+    }
+    else if (input$partial_dep_model == "+2 Degree C Scenario") {
+      rf_wy2$finalModel
+    }
+  })
+  
+  # Get correct predictor data frame based on input
+  partial_dep_data <- reactive({
+    if (input$partial_dep_model == "Normal Scenario") {
+      df_wy0_reduced
+    }
+    else if (input$partial_dep_model == "+2 Degree C Scenario") {
+      df_wy2_reduced
+    }
+  })
+  
+  # Create 3D partial dependence plot
+  output$partial_dep_plot <- renderPlotly({
+    
+    plotly_partial_dependence(x = partial_dep_model_obj(),
+                              pred.data = partial_dep_data(),
+                              v1 = input$partial_dep_var1,
+                              v2 = input$partial_dep_var2,
+                              grid.size = 15)
     
   })
   
