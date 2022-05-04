@@ -195,13 +195,23 @@ wy2_vif <- remove_vif(df_wy2_num_preds, vif.threshold = vif.threshold, pref_orde
 wy2_cor <- remove_cor(df_wy2_num_preds, cor.threshold = cor.threshold, pref_order2)$selected.variables
 wy2_select_variables <- unique(append(wy2_vif, wy2_cor))
 
+# Combine selected variables with factors
+df_wy0_preds <- c(all_of(df_wy0_fpreds), all_of(wy0_select_variables))
+df_wy2_preds <- c(all_of(df_wy2_fpreds), all_of(wy2_select_variables))
+
 # Remove numeric variables with multicollinearity
 df_wy0_reduced <- df_wy0 %>% 
-  select(c(response, all_of(df_wy0_fpreds), all_of(wy0_select_variables)))
+  select(c(response, all_of(df_wy0_preds)))
 
 df_wy2_reduced <- df_wy2 %>% 
-  select(c(response, all_of(df_wy2_fpreds), all_of(wy2_select_variables)))
+  select(c(response, all_of(df_wy2_preds)))
 ```
+
+```{r}
+save(df_wy0_preds, file = here("shiny", "aggregated_datasets", "df_wy0_preds.RDS"))
+save(df_wy2_preds, file = here("shiny", "aggregated_datasets", "df_wy2_preds.RDS"))
+```
+
 
 ## Summary of Removed Variables
 
