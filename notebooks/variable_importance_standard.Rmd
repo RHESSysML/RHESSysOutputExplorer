@@ -163,7 +163,7 @@ The next step is intended to elucidate the previous multicollinearity reduction 
 
 
 ```{r summarize_cor_function, class.source='fold-hide'}
-source("~/MEDS/Capstone/RHESSysML_workshop/functions/summarize_removed_vars_v2.R")
+source(here("R", "summarize_removed_vars.R"))
 source(here("R", "summarize_cor.R"))
 source(here("R", "plot_removed_imp.R"))
 source(here("R", "plot_removed_vif.R"))
@@ -183,19 +183,19 @@ summarize_removed_vars(df_wy_reduced, table = TRUE)
 #### Correlation Summary Table
 
 ```{r cor_summary_table_0}
-summarize_cor(clim = 0, selected_removed = "removed")
+summarize_cor(df_wy_reduced, selected_removed = "removed")
 ```
 
 #### Importance Summary Plot
 
 ```{r imp_summary_plot_0, warning=FALSE}
-plot_removed_imp(clim = 0)
+plot_removed_imp(df_wy_num_preds)
 ```
 
 #### VIF Summary Plot
 
 ```{r vif_summary_plot_0, warning=FALSE}
-plot_removed_vif(clim = 0)
+plot_removed_vif(df_wy_num_preds)
 ```
 
 
