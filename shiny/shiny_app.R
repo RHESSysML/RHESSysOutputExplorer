@@ -224,7 +224,10 @@ server <- function(input, output) {
       scale_color_manual(values = c("0" = "#FEA346", 
                                     "2" = "#4BA4A4")) +
       labs(color = "Climate Scenario",
-           y = response_var) +
+           y = paste(metadata[metadata$variable == response_var,]$full_name,
+                     metadata[metadata$variabel == response_var,]$units),
+           x = paste(metadata[metadata$variable == input$independent_variable,]$full_name,
+                     metadata[metadata$variable == input$independent_variable,]$units)) +
       facet_wrap(~ quantile) +
       theme(text = element_text(size = 17))
   })
