@@ -336,18 +336,18 @@ wy_plot
 
 The variable importance values derived from our Random Forest model allow us to investigate interesting relationships and interactions between the response term and important predictors. Below, we investigate how NPP's relationship with the most important predictor is impacted by changes in other predictors in the model.
 
-**Need to change the function below or make different one**
+**create_binned_df() and create_binned_plot() will need to be changed or we need to create diff functions**
 
 ```{r}
 source(here("R", "get_important_predictors.R"))
 
 # assigning first and second most important variables to objects
-pred1_clim <- get_important_predictors(imp_wy, 1)
-pred2_clim <- get_important_predictors(imp_wy, 2)
+pred1 <- get_important_predictors(imp_wy, 1)
+pred2 <- get_important_predictors(imp_wy, 2)
 
 source(here("R", "create_binned_df.R"))
 
-# df_pred_binned <- create_binned_df(df_wy)
+df_pred_binned <- create_binned_df(df_wy)
 ```
 
 ```{r}
@@ -368,22 +368,10 @@ create_binned_plot(df2_pred_binned)
 Variable interactions can be investigated in many ways. The bivariate partial dependence plot below provides a graphical depiction of the marginal effect of two variables on predicted NPP from the random forest model.
 
 ```{r}
-bivariate.partialDependence(x = rf_wy0$finalModel,
-                            pred.data = df_wy0_reduced_allpredictors,
-                            v1 = pred1_clim0,
-                            v2 = pred2_clim0,
-                            grid.size = 15,
-                            col.ramp = c("orange", "green"),
-                            ncols = 20)
-```
-
-Running this plot for both data sets can demonstrate how variable interactions shift given different climate scenarios.
-
-```{r}
-bivariate.partialDependence(x = rf_wy2$finalModel,
-                            pred.data = df_wy2_reduced[-1],
-                            v1 = pred1_clim2,
-                            v2 = pred2_clim2,
+bivariate.partialDependence(x = rf_wy$finalModel,
+                            pred.data = df_wy_reduced_allpredictors,
+                            v1 = pred1,
+                            v2 = pred2,
                             grid.size = 15,
                             col.ramp = c("orange", "green"),
                             ncols = 20)
@@ -406,13 +394,13 @@ The capstone team chose to use permutation importance above as our main represen
 The plot below presents the top 10 variables using % mean decrease in accuracy (%IncMSE) and mean decrease in node impurity (IncNodePurity). %IncMSE is computed from permuting the out-of-bag data, while IncNodePurity is the mean total decrease in node impurities from splitting on the given variable, as measured by the residual sum of squares.
 
 ```{r}
-varImpPlot(rf_wy0$finalModel, n.var = 10, main = "Comparing variable importance measures for climate scenario 0")
+varImpPlot(rf_wy$finalModel, n.var = 10, main = "Comparing variable importance measures")
 ```
 
 The plot below visualizes the distribution of minimum depth from the random forest model. Low values, such as for precipitation below, indicate that many observations are divided into groups based on that variable.
 
 ```{r}
-min_depth_frame <- min_depth_distribution(rf_wy0$finalModel)
+min_depth_frame <- min_depth_distribution(rf_wy$finalModel)
 
 plot_min_depth_distribution(min_depth_frame,
                             mean_sample = "relevant_trees")
@@ -421,11 +409,11 @@ plot_min_depth_distribution(min_depth_frame,
 Lastly, SHapley Additive exPlanations (SHAP) values interpret the marginal contributions of individual features. This allows visualization of the direction of the relationships between predictors and the response variable.
 
 ```{r}
-explain0 <- explain(object = rf_wy0$finalModel,
-                    X = subset(df_wy0_reduced, select = -response),
+explain <- explain(object = rf_wy$finalModel,
+                    X = subset(df_wy_reduced, select = -response),
                     pred_wrapper = predict)
 
-autoplot(explain0, type = "contribution", feature = "response")
+autoplot(explain, type = "contribution", feature = "response")
 ```
 
 
