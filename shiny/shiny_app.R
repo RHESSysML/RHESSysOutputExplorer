@@ -164,7 +164,7 @@ ui <- fluidPage(
                       DT::dataTableOutput("datatable_viewer")),
              tabPanel("Variable Importance",
                       tags$h3("Random Forest Variable Importance Output:"),
-                      tags$h4("Your Response Variable: Net Primary Productivity (NPP)"),
+                      tags$h4(paste0("Your Response Variable: ", response_var)),
                       plotOutput(outputId = "imp_plot", height = 550),
                       tags$h6(importance_caption)),
              tabPanel("Visualizations",
