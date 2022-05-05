@@ -1,6 +1,10 @@
-plot_removed_imp <- function(clim) {
+plot_removed_imp <- function(reduced_df) {
   
-  removed_imp_plot <- ggplot(summarize_removed_vars(clim = clim),
+  df_name <- deparse(substitute(reduced_df))
+  
+  imp_df <- summarize_removed_vars(df_name, plot_prep = TRUE)
+  
+  removed_imp_plot <- ggplot(imp_df,
                              aes(x = importance, y = reorder(variable, importance), fill = selected)) +
     geom_col() + labs(x = "Preliminary Importance", y = "Variable") +
     theme_light()
