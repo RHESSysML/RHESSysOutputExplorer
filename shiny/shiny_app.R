@@ -58,6 +58,7 @@ metadata <- readRDS(here("shiny", "aggregated_datasets", "metadata.RDS")) %>%
 ######### Source functions
 
 source(here("R", "plot_imp.R"))
+source(here("R", "full_name_units.R"))
 
 ######### Text for the welcome page
 
@@ -225,15 +226,12 @@ server <- function(input, output) {
                                     "2" = "#4BA4A4")) +
       labs(color = "Climate Scenario",
            title = paste("Relationship between", 
-                         metadata[metadata$variable == response_var,]$full_name,
+                         full_name_units(response_var, metadata, units = FALSE),
                          "and",
-                         metadata[metadata$variable == input$independent_variable,]$full_name),
-           subtitle = paste("Faceting by",
-                            metadata[metadata$variable == input$facet_variable,]$full_name),
-           y = paste(metadata[metadata$variable == response_var,]$full_name,
-                     metadata[metadata$variable == response_var,]$units),
-           x = paste(metadata[metadata$variable == input$independent_variable,]$full_name,
-                     metadata[metadata$variable == input$independent_variable,]$units)) +
+                         full_name_units(input$independent_variable, metadata, units = FALSE)),
+           subtitle = paste("Faceting by", full_name_units(input$facet_variable, metadata, units = FALSE)),
+           y = full_name_units(response_var, metadata),
+           x = full_name_units(input$independent_variable, metadata)) +
       facet_wrap(~ quantile) +
       theme(text = element_text(size = 17))
   })
