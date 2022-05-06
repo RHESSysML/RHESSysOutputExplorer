@@ -224,8 +224,14 @@ server <- function(input, output) {
       scale_color_manual(values = c("0" = "#FEA346", 
                                     "2" = "#4BA4A4")) +
       labs(color = "Climate Scenario",
+           title = paste("Relationship between", 
+                         metadata[metadata$variable == response_var,]$full_name,
+                         "and",
+                         metadata[metadata$variable == input$independent_variable,]$full_name),
+           subtitle = paste("Faceting by",
+                            metadata[metadata$variable == input$facet_variable,]$full_name),
            y = paste(metadata[metadata$variable == response_var,]$full_name,
-                     metadata[metadata$variabel == response_var,]$units),
+                     metadata[metadata$variable == response_var,]$units),
            x = paste(metadata[metadata$variable == input$independent_variable,]$full_name,
                      metadata[metadata$variable == input$independent_variable,]$units)) +
       facet_wrap(~ quantile) +
