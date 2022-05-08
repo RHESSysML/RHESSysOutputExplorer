@@ -13,6 +13,7 @@ library(lubridate)
 library(DT)
 
 library(plotly)
+library(randomForest)
 
 #options(scipen=999)
 
@@ -162,12 +163,12 @@ partial_dep_model <- selectInput("partial_dep_model",
 
 partial_dep_var1 <- selectInput("partial_dep_var1",
                                 label = tags$h4("Select Variable 1"),
-                                choices = unique(colnames(df_wy)),
+                                choices = colnames(df_wy0_reduced),
                                 multiple = FALSE)
 
 partial_dep_var2 <- selectInput("partial_dep_var2",
                                 label = tags$h4("Select Variable 2"),
-                                choices = unique(colnames(df_wy)),
+                                choices = colnames(df_wy0_reduced),
                                 multiple = FALSE)
 
 #   # Change possible input variables depending on model choice
@@ -239,6 +240,7 @@ ui <- fluidPage(
                                    quantile_slider),
                       mainPanel("Visual Graph of your variable relationships:",
                                 plotlyOutput(outputId = "variable_plot", height = 700))),
+             
              tabPanel("Partial Dependence",
                       sidebarPanel(partial_dep_model,
                                    partial_dep_var1,
@@ -344,6 +346,28 @@ server <- function(input, output) {
   })
   
   ### 3D Partial Dependence Plot
+  
+  observe({
+    x <- input$partial_dep_model
+    
+    if (x == "Normal Scenario") {
+      cols = colnames(df_wy0_reduced %>% select(where(is.numeric)))
+    }
+    else if (x == "+2 Degree C Scenario") {
+      cols = colnames(df_wy2_reduced %>% select(where(is.numeric)))
+    }
+    
+    updateSelectInput(session = getDefaultReactiveDomain(),
+                      "partial_dep_var1",
+                      choices = cols,
+                      selected = cols[1])
+    
+    updateSelectInput(session = getDefaultReactiveDomain(),
+                      "partial_dep_var2",
+                      choices = cols,
+                      selected = cols[2])
+    
+  })
   
   # Get correct RF model based on input
   partial_dep_model_obj <- reactive({
