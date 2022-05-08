@@ -46,10 +46,6 @@ imp_wy2 <- readRDS(here("shiny", "aggregated_datasets", "imp_wy2.RDS")) %>%
 rf_wy0 <- readRDS(here("data", "rf_wy0.RDS"))
 rf_wy2 <- readRDS(here("data", "rf_wy2.RDS"))
 
-# Get predictor variables
-df_wy0_preds <- readRDS(here("shiny", "aggregated_datasets", "df_wy0_preds.RDS"))
-df_wy2_preds <- readRDS(here("shiny", "aggregated_datasets", "df_wy2_preds.RDS"))
-
 # Get reduced data frames
 df_wy0_reduced <- df_wy0 %>% 
   select(c(rownames(rf_wy0$finalModel$importance)))
@@ -156,51 +152,23 @@ quantile_slider <- sliderInput("quantile_sel",
 
 # Partial dependence plot inputs
 partial_dep_model <- selectInput("partial_dep_model",
-                                 label = tags$h4("Select your model"),
-                                 choices = c("Normal Scenario", "+2 Degree C Scenario"),
-                                 selected = "Normal Scenario",
-                                 multiple = FALSE)
+  label = tags$h4("Select your model"),
+  choices = c("Normal Scenario", "+2 Degree C Scenario"),
+  selected = "Normal Scenario",
+  multiple = FALSE
+)
 
 partial_dep_var1 <- selectInput("partial_dep_var1",
-                                label = tags$h4("Select Variable 1"),
-                                choices = colnames(df_wy0_reduced),
-                                multiple = FALSE)
+  label = tags$h4("Select Variable 1"),
+  choices = colnames(df_wy0_reduced),
+  multiple = FALSE
+)
 
 partial_dep_var2 <- selectInput("partial_dep_var2",
-                                label = tags$h4("Select Variable 2"),
-                                choices = colnames(df_wy0_reduced),
-                                multiple = FALSE)
-
-#   # Change possible input variables depending on model choice
-#   observe({
-#   x <- input$partial_dep_model
-# 
-#   if (x == "Normal Scenario") {
-#     preds <- df_wy0_preds
-#   }
-#   else if (x == "+2 Degree C Scenario") {
-#     preds <- df_wy2_preds
-#   }
-# 
-#   updateSelectInput("partial_dep_var1",
-#     label = tags$h4("Select Variable 1"),
-#     choices = preds,
-#     selected = head(preds, 1)
-#   )
-# 
-#   updateSelectInput("partial_dep_var2",
-#     label = tags$h4("Select Variable 2"),
-#     choices = preds,
-#     selected = tail(preds, 1)
-#   )
-# }),
-
-# Attempting to create a threshold slider. Work in progress.
-# threshold_slider <- sliderInput("threshold_sel",
-#                                 label = tags$h4("Where would you like to split the facet variable?"),
-#                                 min = min(input$facet_variable),
-#                                 max = max(input$facet_variable),
-#                                 value = min(input$facet_variable)) 
+  label = tags$h4("Select Variable 2"),
+  choices = colnames(df_wy0_reduced),
+  multiple = FALSE
+)
 
 ########## Create UI
 ui <- fluidPage(
@@ -346,58 +314,58 @@ server <- function(input, output) {
   })
   
   ### 3D Partial Dependence Plot
-  
+
   observe({
     x <- input$partial_dep_model
-    
+
     if (x == "Normal Scenario") {
-      cols = colnames(df_wy0_reduced %>% select(where(is.numeric)))
+      cols <- colnames(df_wy0_reduced %>% select(where(is.numeric)))
+    } else if (x == "+2 Degree C Scenario") {
+      cols <- colnames(df_wy2_reduced %>% select(where(is.numeric)))
     }
-    else if (x == "+2 Degree C Scenario") {
-      cols = colnames(df_wy2_reduced %>% select(where(is.numeric)))
-    }
-    
-    updateSelectInput(session = getDefaultReactiveDomain(),
-                      "partial_dep_var1",
-                      choices = cols,
-                      selected = cols[1])
-    
-    updateSelectInput(session = getDefaultReactiveDomain(),
-                      "partial_dep_var2",
-                      choices = cols,
-                      selected = cols[2])
-    
+
+    updateSelectInput(
+      session = getDefaultReactiveDomain(),
+      "partial_dep_var1",
+      choices = cols,
+      selected = cols[1]
+    )
+
+    updateSelectInput(
+      session = getDefaultReactiveDomain(),
+      "partial_dep_var2",
+      choices = cols,
+      selected = cols[2]
+    )
   })
-  
+
   # Get correct RF model based on input
   partial_dep_model_obj <- reactive({
     if (input$partial_dep_model == "Normal Scenario") {
       rf_wy0$finalModel
-    }
-    else if (input$partial_dep_model == "+2 Degree C Scenario") {
+    } else if (input$partial_dep_model == "+2 Degree C Scenario") {
       rf_wy2$finalModel
     }
   })
-  
+
   # Get correct predictor data frame based on input
   partial_dep_data <- reactive({
     if (input$partial_dep_model == "Normal Scenario") {
       df_wy0_reduced
-    }
-    else if (input$partial_dep_model == "+2 Degree C Scenario") {
+    } else if (input$partial_dep_model == "+2 Degree C Scenario") {
       df_wy2_reduced
     }
   })
-  
+
   # Create 3D partial dependence plot
   output$partial_dep_plot <- renderPlotly({
-    
-    plotly_partial_dependence(x = partial_dep_model_obj(),
-                              pred.data = partial_dep_data(),
-                              v1 = input$partial_dep_var1,
-                              v2 = input$partial_dep_var2,
-                              grid.size = 15)
-    
+    plotly_partial_dependence(
+      x = partial_dep_model_obj(),
+      pred.data = partial_dep_data(),
+      v1 = input$partial_dep_var1,
+      v2 = input$partial_dep_var2,
+      grid.size = 15
+    )
   })
   
 }
