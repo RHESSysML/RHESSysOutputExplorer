@@ -1,3 +1,9 @@
+#' @title Create plot of top two important predictors
+#' @description Given an input dataframe containing values for the response variable, the variables deemed to be the two most important predictors, and a column labeling the second most important predictor values by quartile called `bins`. This returned dataframe is intended to be input for the function: `create_binned_plot()`.
+#' 
+#' @param df_binned Dataframe with response term, top two important predictors, and quartile labels for predictor two
+#'
+#' @return ggplot object
 create_binned_plot <- function(df_binned) {
   df_name <- deparse(substitute(df_binned))
   if (df_name == "df0_pred_binned") {
