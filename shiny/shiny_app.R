@@ -22,7 +22,7 @@ setwd(here())
 ########## Get the datasets from the feature importance workflow
 
 # Raw dataset
-df <- read.csv(here("data", "sageres.RDS"))
+df <- readRDS(here("data", "sageres.RDS")) %>% as.data.frame()
 # Main aggregated dataset
 df_wy <- readRDS(here("shiny", "aggregated_datasets", "df_wy.RDS")) %>% as.data.frame()
 # Aggregated dataset for climate scenario 0
@@ -77,6 +77,7 @@ metadata <- readRDS(here("shiny", "aggregated_datasets", "metadata.RDS")) %>%
 
 source(here("R", "plot_imp.R"))
 source(here("R", "plotly_partial_dependence.R"))
+source(here("R", "full_name_units.R"))
 
 ######### Text for the welcome page
 
@@ -224,7 +225,7 @@ ui <- fluidPage(
                       DT::dataTableOutput("datatable_viewer")),
              tabPanel("Variable Importance",
                       tags$h3("Random Forest Variable Importance Output:"),
-                      tags$h4("Your Response Variable: Net Primary Productivity (NPP)"),
+                      tags$h4(paste0("Your Response Variable: ", response_var)),
                       plotOutput(outputId = "imp_plot", height = 550),
                       tags$h6(importance_caption)),
              tabPanel("Visualizations",
@@ -289,16 +290,17 @@ server <- function(input, output) {
       )) +
       geom_point(aes(color = clim)) +
       geom_smooth(se = FALSE, method = lm, color = "#B251F1") +
-      scale_color_manual(values = c(
-        "0" = "#FEA346",
-        "2" = "#4BA4A4"
-        )) +
-      labs(
-        color = "Climate Scenario",
-        y = response_var
-      ) +
-      facet_wrap(~quantile) +
-      theme_light() +
+      scale_color_manual(values = c("0" = "#FEA346", 
+                                    "2" = "#4BA4A4")) +
+      labs(color = "Climate Scenario",
+           title = paste("Relationship between", 
+                         full_name_units(response_var, metadata, units = FALSE),
+                         "and",
+                         full_name_units(input$independent_variable, metadata, units = FALSE)),
+           subtitle = paste("Faceting by", full_name_units(input$facet_variable, metadata, units = FALSE)),
+           y = full_name_units(response_var, metadata),
+           x = full_name_units(input$independent_variable, metadata)) +
+      facet_wrap(~ quantile) +
       theme(text = element_text(size = 17))
     
     ggplotly(p)
