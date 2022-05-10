@@ -1,3 +1,10 @@
+#' @title Create dataframe comparing variable importance
+#' @description Using two dataframes containing variables and variable importance, returns a `kable` table comparing rank importance between the two.
+#'
+#' @param imp_wy_df1 Dataframe containing two columns - "Variable" (with variable names) and "Overall" (variable importance derived from `varimp`). 
+#' @param imp_wy_df2 Same as `imp_wy_df1` for a second simulation.
+#'
+#' @return kable table object
 df_imp_table <- function(imp_wy_df1, imp_wy_df2) {
   
   df_imp <- imp_wy_df1 %>% 

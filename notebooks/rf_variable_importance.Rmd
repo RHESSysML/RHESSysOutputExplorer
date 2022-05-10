@@ -189,11 +189,11 @@ source(here("R", "remove_cor.R"))
 # Create list of selected variables
 wy0_vif <- remove_vif(df_wy0_num_preds, vif.threshold = vif.threshold, pref_order0)$selected.variables
 wy0_cor <- remove_cor(df_wy0_num_preds, cor.threshold = cor.threshold, pref_order0)$selected.variables
-wy0_select_variables <- unique(append(wy0_vif, wy0_cor))
+wy0_select_variables <- intersect(wy0_vif, wy0_cor)
 
 wy2_vif <- remove_vif(df_wy2_num_preds, vif.threshold = vif.threshold, pref_order2)$selected.variables
 wy2_cor <- remove_cor(df_wy2_num_preds, cor.threshold = cor.threshold, pref_order2)$selected.variables
-wy2_select_variables <- unique(append(wy2_vif, wy2_cor))
+wy2_select_variables <- intersect(wy2_vif, wy2_cor)
 
 # Combine selected variables with factors
 df_wy0_preds <- c(all_of(df_wy0_fpreds), all_of(wy0_select_variables))
@@ -233,25 +233,25 @@ The following functions output two tables and two plots of all variables indicat
 #### VIF Summary Table
 
 ```{r vif_summary_table_0, warning=FALSE}
-summarize_removed_vars(clim = 0, table = TRUE)
+summarize_removed_vars(reduced_df = df_wy0_num_preds, table = TRUE)
 ```
 
 #### Correlation Summary Table
 
 ```{r cor_summary_table_0}
-summarize_cor(clim = 0, selected_removed = "removed")
+summarize_cor(reduced_df = df_wy0_num_preds, selected_removed = "removed")
 ```
 
 #### Importance Summary Plot
 
 ```{r imp_summary_plot_0, warning=FALSE}
-plot_removed_imp(clim = 0)
+plot_removed_imp(df_wy0_num_preds)
 ```
 
 #### VIF Summary Plot
 
 ```{r vif_summary_plot_0, warning=FALSE}
-plot_removed_vif(clim = 0)
+plot_removed_vif(df_wy0_num_preds)
 ```
 
 
@@ -260,25 +260,25 @@ plot_removed_vif(clim = 0)
 #### VIF Summary Table
 
 ```{r vif_summary_table_2, warning=FALSE}
-summarize_removed_vars(clim = 2, table = TRUE)
+summarize_removed_vars(df_wy2_num_preds, table = TRUE)
 ```
 
 #### Correlation Summary Table
 
 ```{r cor_summary_table_2}
-summarize_cor(clim = 2, selected_removed = "removed")
+summarize_cor(df_wy2_num_preds, selected_removed = "removed")
 ```
 
 #### Importance Summary Plot
 
 ```{r imp_summary_plot_2, warning=FALSE}
-plot_removed_imp(clim = 2)
+plot_removed_imp(df_wy2_num_preds)
 ```
 
 #### VIF Summary Plot
 
 ```{r vif_summary_plot_2, warning=FALSE}
-plot_removed_vif(clim = 2)
+plot_removed_vif(df_wy2_num_preds)
 ```
 
 # Feature Importance
