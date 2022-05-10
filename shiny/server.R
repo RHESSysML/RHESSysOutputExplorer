@@ -1,30 +1,19 @@
-########################## RHESSysML Shiny App for Sagehen Creek ########################## 
+########################## RHESSysML Shiny App for Sagehen Creek ##########################
 
-########## Create the server ########## 
+########## Create the server ##########
 
 server <- function(input, output) {
-  
+
   # Metadata ----------------------------------------------------------------
-  
+
   output$metadata_DT <- DT::renderDataTable({
     DT::datatable(metadata,
-                  options = list(
-                    pageLength = 30,
-                    initComplete = JS(
-                      "function(settings, json) {",
-                      "$(this.api().table().header()).css({'color': '#FFFFFF'});",
-                      "}"
-                    )
-                  ),
-                  caption = tags$caption(
-                    style = "caption-side: top; text-align: left; color: white",
-                    "Table : ",
-                    tags$em("Metadata"),
-                    color = "white"
-                  )
+      options = list(
+        pageLength = 30
+      )
     )
   })
-  
+
   # Dataset Viewer ----------------------------------------------------------
 
   data_display <- reactive({
@@ -35,36 +24,25 @@ server <- function(input, output) {
       "Aggregated Data (+2 Degree C Climate)" = df_wy2
     )
   })
-  
+
   output$datatable_viewer <- DT::renderDataTable({
     data_display() %>%
       mutate(across(where(is.numeric), round, 6)) %>%
       DT::datatable(
         options = list(
-          pageLength = 15,
-          initComplete = JS(
-            "function(settings, json) {",
-            "$(this.api().table().header()).css({'color': '#FFFFFF'});",
-            "}"
-          )
-        ),
-        caption = tags$caption(
-          style = "caption-side: top; text-align: left; color: white",
-          "Table : ",
-          tags$em("Dataset"),
-          color = "white"
+          pageLength = 15
         )
       )
   })
-  
+
   # Variable Importance -----------------------------------------------------
-  
+
   output$imp_plot <- renderPlot({
     plot_imp(imp_wy0) + plot_imp(imp_wy2)
   })
-  
+
   # Visualizations ----------------------------------------------------------
-  
+
   # Create reactive data frame for visualizations tab plot
   df_wy_reactive <- reactive({
     validate(
@@ -91,7 +69,7 @@ server <- function(input, output) {
         wy %in% input$wy_sel[1]:input$wy_sel[2]
       )
   })
-  
+
   # Create visualizations plot
   output$variable_plot <- renderPlotly({
     p <- ggplot(data = df_wy_reactive(), aes(
@@ -121,6 +99,22 @@ server <- function(input, output) {
       theme(text = element_text(size = 17))
 
     ggplotly(p)
+  })
+
+  output$visualization_statistics <- DT::renderDataTable({
+    df_wy_reactive() %>%
+      group_by(clim, quantile) %>%
+      summarize(
+        "mean.y" = mean(df_wy_reactive()[, response_var]),
+        "min.y" = min(df_wy_reactive()[, response_var]),
+        "max.y" = max(df_wy_reactive()[, response_var]),
+        "mean.x" = mean(!!input$independent_variable),
+        "min.x" = min(!!input$independent_variable),
+        "max.x" = max(!!input$independent_variable)
+      ) %>%
+      ungroup() %>%
+      mutate(across(where(is.numeric), round, 6)) %>%
+      DT::datatable(options = list(dom = "t"))
   })
 
   # Partial Dependence ------------------------------------------------------
@@ -179,4 +173,3 @@ server <- function(input, output) {
     )
   })
 }
-

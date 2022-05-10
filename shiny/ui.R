@@ -1,18 +1,18 @@
 ########################## Create UI ########################## 
 
 ui <- fluidPage(
-  theme = shinytheme("superhero"),
+  theme = shinytheme("readable"),
   tags$h1("RHESSys Output Exploration"),
   navbarPage(
     "Explore your dataset!",
     tabPanel(
       "Welcome!",
-      tags$h2(welcome),
+      tags$h3(welcome),
       br(),
-      tags$h4(intro_1),
-      tags$h4(intro_2),
-      tags$h4(intro_3),
-      tags$h4(intro_4),
+      tags$p(intro_1),
+      tags$p(intro_2),
+      tags$p(intro_3),
+      tags$p(intro_4),
       img(src = "RHESSys_logo_V2.png", height = 450, width = 450)
     ),
     tabPanel(
@@ -29,9 +29,9 @@ ui <- fluidPage(
     tabPanel(
       "Variable Importance",
       tags$h3("Random Forest Variable Importance Output:"),
-      tags$h4(paste0("Your Response Variable: ", response_var)),
+      tags$p(paste0("Your Response Variable: ", response_var)),
       plotOutput(outputId = "imp_plot", height = 550),
-      tags$h6(importance_caption)
+      tags$p(importance_caption)
     ),
     tabPanel(
       "Visualizations",
@@ -48,7 +48,8 @@ ui <- fluidPage(
       mainPanel(
         "Visual Graph of your variable relationships:",
         plotlyOutput(outputId = "variable_plot", height = 700) %>% 
-          withSpinner(type = 6)
+          withSpinner(type = 6),
+        DT::dataTableOutput("visualization_statistics")
       )
     ),
     tabPanel(
