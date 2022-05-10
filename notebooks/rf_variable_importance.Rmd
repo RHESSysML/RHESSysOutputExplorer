@@ -189,7 +189,7 @@ source(here("R", "remove_cor.R"))
 # Create list of selected variables
 wy0_vif <- remove_vif(df_wy0_num_preds, vif.threshold = vif.threshold, pref_order0)$selected.variables
 wy0_cor <- remove_cor(df_wy0_num_preds, cor.threshold = cor.threshold, pref_order0)$selected.variables
-wy0_select_variables <- unique(append(wy0_vif, wy0_cor))
+wy0_select_variables <- intersect(wy0_vif, wy0_cor)
 
 wy2_vif <- remove_vif(df_wy2_num_preds, vif.threshold = vif.threshold, pref_order2)$selected.variables
 wy2_cor <- remove_cor(df_wy2_num_preds, cor.threshold = cor.threshold, pref_order2)$selected.variables
