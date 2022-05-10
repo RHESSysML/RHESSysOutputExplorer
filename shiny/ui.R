@@ -8,10 +8,11 @@ ui <- fluidPage(
     tabPanel(
       "Welcome!",
       tags$h2(welcome),
-      tags$h2(intro_3),
-      tags$h2(intro_4),
-      tags$h2(intro_1),
-      tags$h2(intro_2),
+      br(),
+      tags$h4(intro_1),
+      tags$h4(intro_2),
+      tags$h4(intro_3),
+      tags$h4(intro_4),
       img(src = "RHESSys_logo_V2.png", height = 450, width = 450)
     ),
     tabPanel(

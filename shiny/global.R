@@ -97,13 +97,13 @@ df_wy2[, factor_vars] <- lapply(df_wy2[, factor_vars], factor)
 
 welcome <- "Welcome to the RHESSys Interpretation App. Use this app to explore your RHESSys output data."
 
-intro_1 <- "- The \"Variable Importance\" tab will display the output from our machine learning workflows. If you have not gone through the machine learning workflows, we recommend doing that first. They can be found on the RHESSys Github Wiki."
+intro_1 <- "- Use the \"Metadata\" tab to learn more about each variable within your dataset. To add or remove variables specific to your dataset, you can do so using the metadata.Rmd file included within the github repo."
 
-intro_2 <- "- The \"Visualizations\" tab will allow you explore your data's variables and their relationships."
+intro_2 <- "- The \"Dataset Viewer\" tab allows you to view your datasets, both raw and aggregated. Datasets are imported from the random forest or gradient boosting workflow. If you have not already run the workflow with your own RHESSys dataset, the default data will be from Sagehen Creek."
 
-intro_3 <- "- Use the \"Metadata\" tab to learn more about each variable within your dataset. To add or remove variables specific to your dataset, you can do so using the metadata.Rmd file included within the github repo."
+intro_3 <- "- The \"Variable Importance\" tab will display variable importance from the random forest or gradient boosting workflow. If you have not gone through this workflow, we recommend doing that first. They can be found on the RHESSys Github Wiki."
 
-intro_4 <- "- The \"Dataset Viewer\" tab allows you to view your datasets, both raw and aggregated. Datasets get imported from the machine learning workflows. If you have not already run the workflows with your own RHESSys dataset, the default data will be from Sagehen Creek."
+intro_4 <- "- The \"Visualizations\" tab will allow you to explore your data's variables and their relationships."
 
 importance_caption <- "The above graphs uses the random forest workflow to rank how important each varible is in predicting your responce variable, in this case Net Primary Productivity. The graph on the left ranks the variables in a normal climate scenario, and the graph on the right ranks the variables in a +2 degree C cliamte warming scenario."
 
