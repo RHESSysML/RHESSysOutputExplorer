@@ -2,6 +2,7 @@
 
 ########## Attach Packages
 library(shiny)
+library(shinycssloaders)
 library(tidyverse)
 library(tidyselect)
 library(here)
@@ -11,7 +12,6 @@ library(kableExtra)
 library(shinythemes)
 library(lubridate)
 library(DT)
-
 library(plotly)
 library(randomForest)
 
@@ -214,7 +214,7 @@ ui <- fluidPage(
                                    partial_dep_var1,
                                    partial_dep_var2),
                       mainPanel("Bivariate Partial Depedence",
-                                plotlyOutput(outputId = "partial_dep_plot")))
+                                plotlyOutput(outputId = "partial_dep_plot") %>% withSpinner(type = 6)))
   )
 )
 
@@ -314,7 +314,8 @@ server <- function(input, output) {
   })
   
   ### 3D Partial Dependence Plot
-
+  
+  # Update select inputs based on the model choice
   observe({
     x <- input$partial_dep_model
 
