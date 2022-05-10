@@ -5,10 +5,20 @@
 #'
 #' @return Dataframe with response term, top two important predictors, and quartile labels for predictor two
 create_binned_df <- function(df) {
+  
+  
+  df_name <- deparse(substitute(df))
+  clim_id <- str_extract(df_name, pattern = "\\d")
+  
+  if (!is.na(clim_id)) {
+    pred1 <- get(paste0("pred1_clim", clim_id))
+    pred2 <- get(paste0("pred2_clim", clim_id))
+  }
+  
   df_pred_binned <- df_wy %>% 
-    select(all_of(pred1_clim0), all_of(pred2_clim0), response) %>%
-    mutate(pred1 = df_wy[[pred1_clim0]],
-           pred2 = df_wy[[pred2_clim0]]) %>% 
+    select(all_of(pred1), all_of(pred2), response) %>%
+    mutate("pred1" = df_wy[[pred1]],
+           "pred2" = df_wy[[pred2]]) %>%
     mutate(bin = as.numeric(ntile(pred2, 4)))
   
   return(df_pred_binned)
