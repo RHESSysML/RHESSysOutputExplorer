@@ -46,7 +46,8 @@ ui <- fluidPage(
       ),
       mainPanel(
         "Visual Graph of your variable relationships:",
-        plotlyOutput(outputId = "variable_plot", height = 700)
+        plotlyOutput(outputId = "variable_plot", height = 700) %>% 
+          withSpinner(type = 6)
       )
     ),
     tabPanel(
@@ -58,7 +59,8 @@ ui <- fluidPage(
       ),
       mainPanel(
         "Bivariate Partial Depedence",
-        plotlyOutput(outputId = "partial_dep_plot") %>% withSpinner(type = 6)
+        plotlyOutput(outputId = "partial_dep_plot") %>% 
+          withSpinner(type = 6)
       )
     )
   )

@@ -117,6 +117,7 @@ server <- function(input, output) {
         x = full_name_units(input$independent_variable, metadata)
       ) +
       facet_wrap(~quantile) +
+      theme_light() +
       theme(text = element_text(size = 17))
 
     ggplotly(p)
