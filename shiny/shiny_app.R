@@ -58,6 +58,7 @@ metadata <- readRDS(here("shiny", "aggregated_datasets", "metadata.RDS")) %>%
 ######### Source functions
 
 source(here("R", "plot_imp.R"))
+source(here("R", "full_name_units.R"))
 
 ######### Text for the welcome page
 
@@ -164,7 +165,7 @@ ui <- fluidPage(
                       DT::dataTableOutput("datatable_viewer")),
              tabPanel("Variable Importance",
                       tags$h3("Random Forest Variable Importance Output:"),
-                      tags$h4("Your Response Variable: Net Primary Productivity (NPP)"),
+                      tags$h4(paste0("Your Response Variable: ", response_var)),
                       plotOutput(outputId = "imp_plot", height = 550),
                       tags$h6(importance_caption)),
              tabPanel("Visualizations",
@@ -224,7 +225,13 @@ server <- function(input, output) {
       scale_color_manual(values = c("0" = "#FEA346", 
                                     "2" = "#4BA4A4")) +
       labs(color = "Climate Scenario",
-           y = response_var) +
+           title = paste("Relationship between", 
+                         full_name_units(response_var, metadata, units = FALSE),
+                         "and",
+                         full_name_units(input$independent_variable, metadata, units = FALSE)),
+           subtitle = paste("Faceting by", full_name_units(input$facet_variable, metadata, units = FALSE)),
+           y = full_name_units(response_var, metadata),
+           x = full_name_units(input$independent_variable, metadata)) +
       facet_wrap(~ quantile) +
       theme(text = element_text(size = 17))
   })

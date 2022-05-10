@@ -1,3 +1,9 @@
+#' @title Plot VIF containing removed variables
+#' @description Creates a ggplot object showing Variance Inflation Factors (VIF) with groups for variables removed/selected from the random forest model based on multicollinearity
+#'
+#' @param reduced_df Dataframe containing the selected predictor variables
+#'
+#' @return ggplot object
 plot_removed_vif <- function(reduced_df) {
   
   df_name <- deparse(substitute(reduced_df))
