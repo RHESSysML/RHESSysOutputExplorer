@@ -2,6 +2,7 @@
 
 ########## Attach Packages
 library(shiny)
+library(shinycssloaders)
 library(tidyverse)
 library(tidyselect)
 library(here)
@@ -11,6 +12,8 @@ library(kableExtra)
 library(shinythemes)
 library(lubridate)
 library(DT)
+library(plotly)
+library(randomForest)
 
 #options(scipen=999)
 
@@ -39,6 +42,18 @@ imp_wy2 <- readRDS(here("shiny", "aggregated_datasets", "imp_wy2.RDS")) %>%
   arrange(Rank) %>% 
   as.data.frame()
 
+# Get random forest models
+rf_wy0 <- readRDS(here("data", "rf_wy0.RDS"))
+rf_wy2 <- readRDS(here("data", "rf_wy2.RDS"))
+
+# Get reduced data frames
+df_wy0_reduced <- df_wy0 %>% 
+  select(c(rownames(rf_wy0$finalModel$importance)))
+
+df_wy2_reduced <- df_wy2 %>% 
+  select(c(rownames(rf_wy2$finalModel$importance)))
+
+
 ########## User Inputs
 factor_vars <- c("stratumID", "scen", "topo")
 response_var <- colnames(df_wy[1])
@@ -58,6 +73,7 @@ metadata <- readRDS(here("shiny", "aggregated_datasets", "metadata.RDS")) %>%
 ######### Source functions
 
 source(here("R", "plot_imp.R"))
+source(here("R", "plotly_partial_dependence.R"))
 source(here("R", "full_name_units.R"))
 
 ######### Text for the welcome page
@@ -134,12 +150,25 @@ quantile_slider <- sliderInput("quantile_sel",
                                max = 9,
                                value = 1)
 
-# Attempting to create a threshold slider. Work in progress.
-# threshold_slider <- sliderInput("threshold_sel",
-#                                 label = tags$h4("Where would you like to split the facet variable?"),
-#                                 min = min(input$facet_variable),
-#                                 max = max(input$facet_variable),
-#                                 value = min(input$facet_variable)) 
+# Partial dependence plot inputs
+partial_dep_model <- selectInput("partial_dep_model",
+  label = tags$h4("Select your model"),
+  choices = c("Normal Scenario", "+2 Degree C Scenario"),
+  selected = "Normal Scenario",
+  multiple = FALSE
+)
+
+partial_dep_var1 <- selectInput("partial_dep_var1",
+  label = tags$h4("Select Variable 1"),
+  choices = colnames(df_wy0_reduced),
+  multiple = FALSE
+)
+
+partial_dep_var2 <- selectInput("partial_dep_var2",
+  label = tags$h4("Select Variable 2"),
+  choices = colnames(df_wy0_reduced),
+  multiple = FALSE
+)
 
 ########## Create UI
 ui <- fluidPage(
@@ -178,7 +207,14 @@ ui <- fluidPage(
                                    facet_variable,
                                    quantile_slider),
                       mainPanel("Visual Graph of your variable relationships:",
-                                plotOutput(outputId = "variable_plot", height = 700)))
+                                plotlyOutput(outputId = "variable_plot", height = 700))),
+             
+             tabPanel("Partial Dependence",
+                      sidebarPanel(partial_dep_model,
+                                   partial_dep_var1,
+                                   partial_dep_var2),
+                      mainPanel("Bivariate Partial Depedence",
+                                plotlyOutput(outputId = "partial_dep_plot") %>% withSpinner(type = 6)))
   )
 )
 
@@ -217,9 +253,11 @@ server <- function(input, output) {
              wy %in% input$wy_sel[1]:input$wy_sel[2])
   })
   
-  output$variable_plot <- renderPlot({
-    ggplot(data = df_wy_reactive(), aes(x = !!input$independent_variable, 
-                                        y = df_wy_reactive()[,response_var])) +
+  output$variable_plot <- renderPlotly({
+    p <- ggplot(data = df_wy_reactive(), aes(
+      x = !!input$independent_variable,
+      y = df_wy_reactive()[, response_var]
+      )) +
       geom_point(aes(color = clim)) +
       geom_smooth(se = FALSE, method = lm, color = "#B251F1") +
       scale_color_manual(values = c("0" = "#FEA346", 
@@ -234,6 +272,8 @@ server <- function(input, output) {
            x = full_name_units(input$independent_variable, metadata)) +
       facet_wrap(~ quantile) +
       theme(text = element_text(size = 17))
+    
+    ggplotly(p)
   })
   
   output$imp_plot <- renderPlot({
@@ -271,6 +311,62 @@ server <- function(input, output) {
                                          tags$em('Dataset'),
                                          color = 'white'))
     
+  })
+  
+  ### 3D Partial Dependence Plot
+  
+  # Update select inputs based on the model choice
+  observe({
+    x <- input$partial_dep_model
+
+    if (x == "Normal Scenario") {
+      cols <- colnames(df_wy0_reduced %>% select(where(is.numeric)))
+    } else if (x == "+2 Degree C Scenario") {
+      cols <- colnames(df_wy2_reduced %>% select(where(is.numeric)))
+    }
+
+    updateSelectInput(
+      session = getDefaultReactiveDomain(),
+      "partial_dep_var1",
+      choices = cols,
+      selected = cols[1]
+    )
+
+    updateSelectInput(
+      session = getDefaultReactiveDomain(),
+      "partial_dep_var2",
+      choices = cols,
+      selected = cols[2]
+    )
+  })
+
+  # Get correct RF model based on input
+  partial_dep_model_obj <- reactive({
+    if (input$partial_dep_model == "Normal Scenario") {
+      rf_wy0$finalModel
+    } else if (input$partial_dep_model == "+2 Degree C Scenario") {
+      rf_wy2$finalModel
+    }
+  })
+
+  # Get correct predictor data frame based on input
+  partial_dep_data <- reactive({
+    if (input$partial_dep_model == "Normal Scenario") {
+      df_wy0_reduced
+    } else if (input$partial_dep_model == "+2 Degree C Scenario") {
+      df_wy2_reduced
+    }
+  })
+
+  # Create 3D partial dependence plot
+  output$partial_dep_plot <- renderPlotly({
+    plotly_partial_dependence(
+      x = partial_dep_model_obj(),
+      pred.data = partial_dep_data(),
+      v1 = input$partial_dep_var1,
+      v2 = input$partial_dep_var2,
+      grid.size = 15
+    )
   })
   
 }

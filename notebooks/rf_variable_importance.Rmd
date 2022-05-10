@@ -195,13 +195,18 @@ wy2_vif <- remove_vif(df_wy2_num_preds, vif.threshold = vif.threshold, pref_orde
 wy2_cor <- remove_cor(df_wy2_num_preds, cor.threshold = cor.threshold, pref_order2)$selected.variables
 wy2_select_variables <- intersect(wy2_vif, wy2_cor)
 
+# Combine selected variables with factors
+df_wy0_preds <- c(all_of(df_wy0_fpreds), all_of(wy0_select_variables))
+df_wy2_preds <- c(all_of(df_wy2_fpreds), all_of(wy2_select_variables))
+
 # Remove numeric variables with multicollinearity
 df_wy0_reduced <- df_wy0 %>% 
-  select(c(response, all_of(df_wy0_fpreds), all_of(wy0_select_variables)))
+  select(c(response, all_of(df_wy0_preds)))
 
 df_wy2_reduced <- df_wy2 %>% 
-  select(c(response, all_of(df_wy2_fpreds), all_of(wy2_select_variables)))
+  select(c(response, all_of(df_wy2_preds)))
 ```
+
 
 ## Summary of Removed Variables
 
@@ -348,6 +353,12 @@ rf_wy2 <- train(x = df_wy2_reduced %>% select(!response),
                 keep.forest = TRUE,  # necessary for permimp
                 keep.inbag = TRUE,  # necessary for permimp
                 trControl = trainControl(method = "none", seed = 4326)) # to use 10-fold cross validation, method = "cv", number = 10
+```
+
+```{r save_rf_models}
+# save models for the Shiny app
+saveRDS(rf_wy0, here("data", "rf_wy0.RDS"))
+saveRDS(rf_wy2, here("data", "rf_wy2.RDS"))
 ```
 
 Assessing feature importance is a complex task with many possible approaches. Tree based models like random forest offer convenient "split-improvement" measures, like mean increase in purity and minimum depth, which are intrinsically derived during model construction. However, these have been shown to be biased towards variables with many categories or large value ranges (Strobl et al. 2007). Despite some of their shortcomings, these importance measures can provide insights are further explored at the end of this document.
