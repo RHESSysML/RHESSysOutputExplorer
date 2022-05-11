@@ -397,7 +397,7 @@ saveRDS(imp_wy2, file = here("shiny", "aggregated_datasets", "imp_wy2.RDS"))
 
 The following section provides visualizations and statistics to evaluate the random forest performance.
 
-First, simply calling the random forest shows a summary of the results, including percent variance explained.
+Calling the random forest shows a summary of the results, including percent variance explained.
 
 ```{r}
 rf_wy0_fit <- round(tail(rf_wy0$finalModel$rsq, 1)*100, 2)
@@ -415,33 +415,6 @@ rf_wy2$finalModel
 
 The model for the +2 degree Celsius climate scenario explained `r rf_wy2_fit`% of variance in NPP.
 
-Next, we can implement a permutation test cross-validation for the random forest models. The statistics are based on prediction error on the withheld data.
-
-```{r}
-df_wy0_reduced_allpredictors <- df_wy0_reduced %>% 
-  select(!response)
-
-rf_wy0_cv <- rf.crossValidation(x = rf_wy0$finalModel, xdata = df_wy0_reduced_allpredictors, p = 0.1, n = 10)
-
-rf_wy0_cv_fit <- round(tail(rf_wy0_cv$model.varExp, 1), 2)
-
-rf_wy0_cv
-```
-
-The results above indicate that, through 10-fold cross validation with 10% of data withheld, the model for the base climate scenario data explains `r rf_wy0_cv_fit`% of the variance in NPP. This result is lower than our original fit % explained.
-
-```{r}
-df_wy2_reduced_allpredictors <- df_wy2_reduced %>% 
-  select(!response)
-
-rf_wy2_cv <- rf.crossValidation(x = rf_wy2$finalModel, xdata = df_wy2_reduced_allpredictors, p = 0.1, n = 10)
-
-rf_wy2_cv_fit <- round(tail(rf_wy2_cv$model.varExp, 1), 2)
-
-rf_wy2_cv
-```
-
-The results above indicate that, through 10-fold cross validation with 10% of data withheld, the model for the +2 degree Celsius climate scenario data explains `r rf_wy2_cv_fit`% of the variance in NPP. This result is lower than our original fit % explained.
 
 # Visualize Results
 
