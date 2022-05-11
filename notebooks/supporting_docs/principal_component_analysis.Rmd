@@ -1,0 +1,87 @@
+---
+title: "Principal Component Analysis"
+author: "Alex Clippinger"
+date: '2022-04-27'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(here)
+library(ggbiplot)
+library(plotly)
+```
+
+# Load Data
+
+```{r load_data, message = FALSE}
+df0 <- readRDS(here::here("shiny", "aggregated_datasets", "df_wy0.RDS")) 
+df2 <- readRDS(here::here("shiny", "aggregated_datasets", "df_wy2.RDS"))
+```
+
+# Principal Component Analysis (PCA)
+
+## Run PCA
+
+```{r}
+# PCA works best with numerical data
+df0.pca <- df0 %>% 
+  select(where(is.numeric)) %>% 
+  select(-c(slope, aspect, elev))
+
+df0.pca <- prcomp(df0.pca, center = TRUE, scale. = TRUE)
+
+# PCA works best with numerical data
+df2.pca <- df2 %>% 
+  select(where(is.numeric)) %>% 
+  select(-c(slope, aspect, elev))
+
+df2.pca <- prcomp(df2.pca, center = TRUE, scale. = TRUE)
+```
+
+## Summary of PCA
+
+```{r}
+summary(df0.pca)
+```
+
+## Visualizations
+
+### PC1 & PC2
+
+```{r}
+summary(df2.pca)
+```
+
+```{r}
+pca0.plot <- ggbiplot(df0.pca, groups = df0$topo, alpha = 0.25) + 
+  theme_light()
+
+ggplotly(pca0.plot)
+```
+
+```{r}
+pca2.plot <- ggbiplot(df2.pca, groups = df2$topo, alpha = 0.25) +
+  theme_light()
+
+ggplotly(pca2.plot)
+```
+
+### PC3 & PC4
+
+```{r}
+pca0.plot <- ggbiplot(df0.pca, choices = 3:4, groups = df0$topo, alpha = 0.25) + 
+  theme_light()
+
+ggplotly(pca0.plot)
+```
+
+```{r}
+pca2.plot <- ggbiplot(df2.pca, choices = 3:4, groups = df2$topo, alpha = 0.25) +
+  theme_light()
+
+ggplotly(pca2.plot)
+```
+
