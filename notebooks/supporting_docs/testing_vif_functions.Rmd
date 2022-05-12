@@ -1,0 +1,293 @@
+---
+title: "Variable Importance Template"
+author: "RHESSysML Capstone Group"
+date: "2/5/2022"
+output: 
+  rmarkdown::html_document:
+    toc: true
+    toc_float: true
+    code_folding: show
+    theme: cerulean
+---
+
+# Introduction
+
+The purpose of this notebook is to test and compare the following methods of removing multicollinearity with Variance Inflation Factors:
+
+1. Using the `auto_vif()` method and random forest preference order
+
+2. Using the `auto_vif()` method and NULL preference order
+
+3. Using the `auto_vif()` method and manual preference order
+
+4. Using the custom `vif_remove()` function
+
+
+# Setup
+
+## Load packages
+
+```{r setup, include = TRUE, warning=FALSE, message=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+options(scipen = 999)
+
+# Standard packages
+library(tidyverse)
+library(here)
+library(patchwork)
+library(DT)
+
+# Machine Learning packages
+library(caret)
+library(spatialRF)
+library(randomForest)
+library(party)
+library(partykit)
+
+# Local functions
+source(here::here("R", "remove_vif.R"))  # Using spatialRF auto_vif() 
+source(here::here("R", "vif_remove.R"))  # Using custom function
+source(here::here("R", "summarize_removed_vars.R"))
+source(here::here("R", "summarize_cor.R"))
+source(here::here("R", "plot_removed_imp.R"))
+source(here::here("R", "plot_removed_vif.R"))
+```
+
+## Load data
+
+```{r load_data}
+load(here::here("data", "prepared_data.RData"))
+```
+
+## Prepare data for auto_vif function
+
+```{r prepare_data}
+# Save data frames of predictor variables for first climate scenario
+df_wy_num_preds <- df_wy0 %>% 
+  select(!response & where(is.numeric))
+
+# Removing columns with no variance
+no_var <- sapply(df_wy_num_preds, function(col) var(col) == 0)
+df_wy_num_preds <- df_wy_num_preds[, !no_var]
+
+df_wy_fpreds <- df_wy0 %>% 
+  select(!response & where(is.factor)) %>% 
+  colnames()
+```
+
+## Global Parameters
+
+We will test the same vif threshold for all methods.
+
+```{r set_threshold}
+vif.threshold = 5
+```
+
+# Methods {.tabset}
+
+## #1 {.tabset}
+
+1. Using the `auto_vif()` method and random forest preference order
+
+### Code
+
+```{r auto_preference_order, warning=FALSE}
+# First climate scenario
+
+# Find preliminary importance using random forest
+imp <- train(x = df_wy0 %>% select(!response),
+             y = df_wy0$response,
+             method = 'rf',
+             importance = TRUE,
+             replace = TRUE,
+             trControl = trainControl(method = "none", seed = 4326))
+
+# Set preference order based on variable importance
+pref_order <- varImp(imp$finalModel, scale = FALSE) %>% 
+  arrange(-Overall) %>% 
+  rownames()
+```
+
+```{r remove_vif_1, warning = FALSE}
+wy0_vif <- remove_vif(df_wy_num_preds, vif.threshold = vif.threshold, pref_order)
+
+wy_select_variables <- wy0_vif$selected.variables
+
+# Remove numeric variables with multicollinearity
+df_wy_reduced <- df_wy0 %>% 
+  select(c(response, all_of(df_wy_fpreds), all_of(wy_select_variables)))
+```
+
+### Summary of Removed Variables
+
+#### Climate Scenario 0 {.tabset}
+
+##### VIF Summary Table
+
+```{r warning=FALSE}
+summarize_removed_vars(df_wy_reduced, table = TRUE)
+```
+
+##### Correlation Summary Table
+
+```{r}
+summarize_cor(df_wy_reduced, selected_removed = "removed")
+```
+
+##### Importance Summary Plot
+
+```{r warning=FALSE}
+plot_removed_imp(df_wy_num_preds)
+```
+
+##### VIF Summary Plot
+
+```{r warning=FALSE}
+plot_removed_vif(df_wy_num_preds)
+```
+
+## #2 {.tabset}
+
+2. Using the `auto_vif()` method and NULL preference order
+
+### Code
+
+```{r remove_vif_2, warning = FALSE}
+wy0_vif <- remove_vif(df_wy_num_preds, vif.threshold = vif.threshold, 
+                      preference.order=NULL)
+
+wy_select_variables <- wy0_vif$selected.variables
+
+# Remove numeric variables with multicollinearity
+df_wy_reduced <- df_wy0 %>% 
+  select(c(response, all_of(df_wy_fpreds), all_of(wy_select_variables)))
+```
+
+### Summary of Removed Variables
+
+#### Climate Scenario 0 {.tabset}
+
+##### VIF Summary Table
+
+```{r warning=FALSE}
+summarize_removed_vars(df_wy_reduced, table = TRUE)
+```
+
+##### Correlation Summary Table
+
+```{r}
+summarize_cor(df_wy_reduced, selected_removed = "removed")
+```
+
+##### Importance Summary Plot
+
+```{r warning=FALSE}
+plot_removed_imp(df_wy_num_preds)
+```
+
+##### VIF Summary Plot
+
+```{r warning=FALSE}
+plot_removed_vif(df_wy_num_preds)
+```
+
+## #3 {.tabset}
+
+3. Using the `auto_vif()` method and manual preference order
+
+### Code
+
+```{r set_pref_order}
+# Preference order can be determined manually for variables of interest:
+pref_order <- c("precip", "rz_storage", "trans", "evap", "peak_swe")
+```
+
+```{r remove_vif_3, warning = FALSE}
+wy0_vif <- remove_vif(df_wy_num_preds, vif.threshold = vif.threshold, 
+                      preference.order=pref_order)
+
+wy_select_variables <- wy0_vif$selected.variables
+
+# Remove numeric variables with multicollinearity
+df_wy_reduced <- df_wy0 %>% 
+  select(c(response, all_of(df_wy_fpreds), all_of(wy_select_variables)))
+```
+
+### Summary of Removed Variables
+
+The following functions output two tables and two plots of all variables indicating selection status and the criteria by which those selections were made. The first table shows preliminary importance and VIF, and the second shows correlation between each variable combination. Preliminary importance and VIF are also plotted visually in the two bar charts. 
+
+#### Climate Scenario 0 {.tabset}
+
+##### VIF Summary Table
+
+```{r warning=FALSE}
+summarize_removed_vars(df_wy_reduced, table = TRUE)
+```
+
+##### Correlation Summary Table
+
+```{r}
+summarize_cor(df_wy_reduced, selected_removed = "removed")
+```
+
+##### Importance Summary Plot
+
+```{r warning=FALSE}
+plot_removed_imp(df_wy_num_preds)
+```
+
+##### VIF Summary Plot
+
+```{r warning=FALSE}
+plot_removed_vif(df_wy_num_preds)
+```
+
+
+## #4 {.tabset}
+
+4. Using the custom `vif_remove()` function
+
+### Code
+
+```{r remove_vif_4, warning = FALSE}
+wy0_vif <- vif_remove(df_wy0, response_col = "response",
+                      vif_threshold = vif.threshold)
+
+# Remove numeric variables with multicollinearity
+df_wy_reduced <- df_wy0 %>% 
+  select(c(response, all_of(df_wy_fpreds), all_of(wy0_vif)))
+```
+
+### Summary of Removed Variables
+
+The following functions output two tables and two plots of all variables indicating selection status and the criteria by which those selections were made. The first table shows preliminary importance and VIF, and the second shows correlation between each variable combination. Preliminary importance and VIF are also plotted visually in the two bar charts. 
+
+#### Climate Scenario 0 {.tabset}
+
+##### VIF Summary Table
+
+```{r warning=FALSE}
+summarize_removed_vars(df_wy_reduced, table = TRUE)
+```
+
+##### Correlation Summary Table
+
+```{r}
+summarize_cor(df_wy_reduced, selected_removed = "removed")
+```
+
+##### Importance Summary Plot
+
+```{r warning=FALSE}
+plot_removed_imp(df_wy_num_preds)
+```
+
+##### VIF Summary Plot
+
+```{r warning=FALSE}
+plot_removed_vif(df_wy_num_preds)
+```
+
+
