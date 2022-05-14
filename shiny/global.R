@@ -86,13 +86,6 @@ df_wy2_reduced <- df_wy2 %>%
 factor_vars <- c("stratumID", "scen", "topo")
 response_var <- colnames(df_wy[1])
 
-# Convert categorical variables to factors
-df_wy[, factor_vars] <- lapply(df_wy[, factor_vars], factor)
-df_wy$clim <- as.factor(df_wy$clim)
-df_wy0[, factor_vars] <- lapply(df_wy0[, factor_vars], factor)
-df_wy2[, factor_vars] <- lapply(df_wy2[, factor_vars], factor)
-
-
 ######### Text for the welcome page ########## 
 
 welcome <- "Welcome to the RHESSys Interpretation App. Use this app to explore your RHESSys output data."
