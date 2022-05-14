@@ -40,6 +40,7 @@ library(party)
 library(partykit)
 library(permimp)
 library(gbm)
+library(spatialRF)
 ```
 
 
@@ -51,9 +52,6 @@ Note that this workflow will use data that is aggregated by water year but **not
 
 ```{r}
 load(here("data", "prepared_data.RData"))
-
-# Rproj shenanigans
-load(here("../RHESSysML/data/prepared_data.RData"))
 ```
 
 First, we want to get a summary description of the data set. This is crucial for many reasons:
@@ -67,7 +65,8 @@ Here, we display summary statistics for the base climate scenario data.
 ```{r describe_data}
 source(here("R", "summarize_data.R"))
 
-summarize_data(df_wy)
+summarize_data(df_wy0)
+summarize_data(df_wy2)
 ```
 
 We can also look at the key study area characteristics. In this Sagehen Creek study area, there are six landscape positions where RHESSys was run.
@@ -109,11 +108,19 @@ Similarly, the `auto_cor()` function works by computing a correlation matrix for
 First, we create data frames containing only the predictor variables to assist with the next steps.
 
 ```{r get_predictors}
-# Save data frames of predictor variables
-df_wy_num_preds <- df_wy %>% 
+# Save data frames of predictor variables for first climate scenario
+df_wy0_num_preds <- df_wy0 %>% 
   select(!response & where(is.numeric))
 
-df_wy_fpreds <- df_wy %>% 
+df_wy0_fpreds <- df_wy0 %>% 
+  select(!response & where(is.factor)) %>% 
+  colnames()
+
+# Save data frames of predictor variables for second climate scenario
+df_wy2_num_preds <- df_wy2 %>% 
+  select(!response & where(is.numeric))
+
+df_wy2_fpreds <- df_wy2 %>% 
   select(!response & where(is.factor)) %>% 
   colnames()
 ```
@@ -132,17 +139,33 @@ Below, there are two methods for setting preference order: (1) Manually creating
 2. Run this chunk to allow preliminary random forest to automatically determine preference order. Note: even though we will be using Gradient Boosting her for the actual analysis, preliminary importance is set using a Random Forest because it is faster.
 
 ```{r auto_preference_order, warning=FALSE}
+# First climate scenario
 
 # Find preliminary importance using random forest
-imp <- train(x = df_wy %>% select(!response),
-              y = df_wy$response,
+imp0 <- train(x = df_wy0 %>% select(!response),
+              y = df_wy0$response,
               method = 'rf',
               importance = TRUE,
               replace = TRUE,
               trControl = trainControl(method = "none", seed = 4326))
 
 # Set preference order based on variable importance
-pref_order <- varImp(imp$finalModel, scale = FALSE) %>% 
+pref_order0 <- varImp(imp0$finalModel, scale = FALSE) %>% 
+  arrange(-Overall) %>% 
+  rownames()
+
+# Second climate scenario
+
+# Find preliminary importance using random forest
+imp2 <- train(x = df_wy2 %>% select(!response),
+              y = df_wy2$response,
+              method = 'rf',
+              importance = TRUE,
+              replace = TRUE,
+              trControl = trainControl(method = "none", seed = 4326))
+
+# Set preference order based on variable importance
+pref_order2 <- varImp(imp2$finalModel, scale = FALSE) %>% 
   arrange(-Overall) %>% 
   rownames()
 ```
@@ -155,22 +178,28 @@ cor.threshold = 0.75
 ```
 
 ```{r remove_multicollinearity, warning = FALSE}
-# Rproj legacy shit
-source(here("functions", "remove_vif.R"))
-source(here("functions", "remove_cor.R"))
-
 source(here("R", "remove_vif.R"))
 source(here("R", "remove_cor.R"))
 
 # Create list of selected variables
-wy_vif <- remove_vif(df_wy_num_preds, vif.threshold = vif.threshold, pref_order)$selected.variables
-wy_cor <- remove_cor(df_wy_num_preds, cor.threshold = cor.threshold, pref_order)$selected.variables
-wy_select_variables <- unique(append(wy_vif, wy_cor))
+wy0_vif <- remove_vif(df_wy0_num_preds, vif.threshold = vif.threshold, pref_order0)$selected.variables
+wy0_cor <- remove_cor(df_wy0_num_preds, cor.threshold = cor.threshold, pref_order0)$selected.variables
+wy0_select_variables <- intersect(wy0_vif, wy0_cor)
+
+wy2_vif <- remove_vif(df_wy2_num_preds, vif.threshold = vif.threshold, pref_order2)$selected.variables
+wy2_cor <- remove_cor(df_wy2_num_preds, cor.threshold = cor.threshold, pref_order2)$selected.variables
+wy2_select_variables <- intersect(wy2_vif, wy2_cor)
+
+# Combine selected variables with factors
+df_wy0_preds <- c(all_of(df_wy0_fpreds), all_of(wy0_select_variables))
+df_wy2_preds <- c(all_of(df_wy2_fpreds), all_of(wy2_select_variables))
 
 # Remove numeric variables with multicollinearity
-df_wy_reduced <- df_wy %>% 
-  select(c(response, all_of(df_wy_fpreds), all_of(wy_select_variables)))
+df_wy0_reduced <- df_wy0 %>% 
+  select(c(response, all_of(df_wy0_preds)))
 
+df_wy2_reduced <- df_wy2 %>% 
+  select(c(response, all_of(df_wy2_preds)))
 ```
 
 ## Summary of Removed Variables
@@ -186,28 +215,57 @@ source(here("R", "plot_removed_vif.R"))
 
 The following functions output two tables and two plots of all variables indicating selection status and the criteria by which those selections were made. The first table shows preliminary importance and VIF, and the second shows correlation between each variable combination. Preliminary importance and VIF are also plotted visually in the two bar charts. 
 
+### Climate Scenario 0 {.tabset}
+
 #### VIF Summary Table
 
-```{r vif_summary_table, warning=FALSE}
-summarize_removed_vars(clim = "", table = TRUE)
+```{r vif_summary_table_0, warning=FALSE}
+summarize_removed_vars(reduced_df = df_wy0_num_preds, table = TRUE)
 ```
 
 #### Correlation Summary Table
 
-```{r cor_summary_table}
-summarize_cor(clim = "", selected_removed = "removed")
+```{r cor_summary_table_0}
+summarize_cor(reduced_df = df_wy0_num_preds, selected_removed = "removed")
 ```
 
 #### Importance Summary Plot
 
-```{r imp_summary_plot, warning=FALSE}
-plot_removed_imp(clim = "")
+```{r imp_summary_plot_0, warning=FALSE}
+plot_removed_imp(df_wy0_num_preds)
 ```
 
 #### VIF Summary Plot
 
-```{r vif_summary_plot, warning=FALSE}
-plot_removed_vif(clim = "")
+```{r vif_summary_plot_0, warning=FALSE}
+plot_removed_vif(df_wy0_num_preds)
+```
+
+
+### Climate Scenario 2 {.tabset}
+
+#### VIF Summary Table
+
+```{r vif_summary_table_2, warning=FALSE}
+summarize_removed_vars(df_wy2_num_preds, table = TRUE)
+```
+
+#### Correlation Summary Table
+
+```{r cor_summary_table_2}
+summarize_cor(df_wy2_num_preds, selected_removed = "removed")
+```
+
+#### Importance Summary Plot
+
+```{r imp_summary_plot_2, warning=FALSE}
+plot_removed_imp(df_wy2_num_preds)
+```
+
+#### VIF Summary Plot
+
+```{r vif_summary_plot_2, warning=FALSE}
+plot_removed_vif(df_wy2_num_preds)
 ```
 
 
@@ -220,13 +278,21 @@ Most gradient boosting models like the one used in this workflow are unable to d
 Additionally, the `gbm` package requires that the response variable is split out from the predictor variables to train the model.
 
 ```{r}
-# Predictor vs response variables
-y = df_wy$response
-x = df_wy[-1]
+# Predictor vs response variables, climate scenario 0
+y0 = df_wy0$response
+x0 = df_wy0[-1]
 
-# One-hot encoding
-x[,df_wy_fpreds] <- lapply(x[,df_wy_fpreds], factor)
-xhot = x %>% data.table::data.table() %>% mltools::one_hot(cols = df_wy_fpreds)
+# Predictor vs response variables, climate scenario 2
+y2 = df_wy2$response
+x2 = df_wy2[-1]
+
+# One-hot encoding, climate scenario 0
+x0[,df_wy0_fpreds] <- lapply(x0[,df_wy0_fpreds], factor)
+xhot0 = x0 %>% data.table::data.table() %>% mltools::one_hot(cols = df_wy0_fpreds)
+
+# One-hot encoding, climate scenario 2
+x2[,df_wy2_fpreds] <- lapply(x2[,df_wy2_fpreds], factor)
+xhot2 = x2 %>% data.table::data.table() %>% mltools::one_hot(cols = df_wy2_fpreds)
 ```
 
 
@@ -254,13 +320,10 @@ fitControl <- caret::trainControl(
   savePredictions = 'final')
 
 tune_grid <- expand.grid(
-  nrounds = seq(from = 100, to = 800, by = 50),
-  eta = c(0.01, 0.02, 0.05, 0.1, 0.3),
-  max_depth = c(2, 3, 4, 5, 6), 
-  gamma = c(0, 10, 50),
-  colsample_bytree = c(.5, .7, .8, 1),
-  min_child_weight = 1,
-  subsample = c(.5, .7, .8, 1))
+  n.trees = seq(from = 200, to = 800, by = 50),
+  shrinkage = c(0.01, 0.02, 0.05, 0.1, 0.3),
+  interaction.depth = c(2, 3, 4, 5, 6), 
+  n.minobsinnode = c(10, 30, 50))
 ```
 
 Note: these parameters are unique to the `gbm` package; there are many packages to implement gradient boosting 
@@ -272,28 +335,57 @@ Running the code chunk below essentially trains a new gradient boosting model fo
 ```{r}
 set.seed(4326)
 
-# gbm_model_cv <- caret::train(
-#   x = xhot,
-#   y = y,
-#   trControl = fitControl,
-#   tuneGrid = tune_grid,
-#   metric = 'RMSE',
-#   method = "gbm",
-#   verbose = FALSE)
+gbm_model_cv0 <- caret::train(
+  x = xhot0,
+  y = y0,
+  trControl = fitControl,
+  tuneGrid = tune_grid,
+  metric = 'RMSE',
+  method = "gbm",
+  verbose = FALSE)
 
-gbm_model_cv <- read_rds(here("models/GBm.rds"))
+#gbm_model_cv0 <- read_rds(here("models/GBm0.rds"))
+saveRDS(gbm_model_cv0, file = here("data/GBm0.RDS"))
 ```
+
+```{r}
+set.seed(4326)
+
+gbm_model_cv2 <- caret::train(
+  x = xhot2,
+  y = y2,
+  trControl = fitControl,
+  tuneGrid = tune_grid,
+  metric = 'RMSE',
+  method = "gbm",
+  verbose = FALSE)
+
+#gbm_model_cv2 <- read_rds(here("models/GBm2.rds"))
+saveRDS(gbm_model_cv2, file = here("data/GBm2.RDS"))
+```
+
 
 To get the 
 
 ```{r}
-best_grid <- gbm_model_cv$bestTune
+best_grid0 <- gbm_model_cv0$bestTune
 
-gbm_model_cv_best <- caret::train(
-  x = xhot,
-  y = y,
+gbm_model_cv0_best <- caret::train(
+  x = xhot0,
+  y = y0,
   trControl = fitControl,
-  tuneGrid = best_grid,
+  tuneGrid = best_grid0,
+  metric = 'RMSE',
+  method = "gbm",
+  verbose = FALSE)
+
+best_grid2 <- gbm_model_cv2$bestTune
+
+gbm_model_cv2_best <- caret::train(
+  x = xhot2,
+  y = y2,
+  trControl = fitControl,
+  tuneGrid = best_grid2,
   metric = 'RMSE',
   method = "gbm",
   verbose = FALSE)
@@ -316,10 +408,15 @@ As the primary measure of importance we instead use partial permutation importan
 
 ```{r}
 
-gbm_imp = varImp(gbm_model_cv_best, scale = FALSE)
-imp_wy_gb = gbm_imp$importance
-imp_wy_gb = imp_wy_gb %>% mutate(Variable = row.names(imp_wy_gb)) %>% 
-  filter(imp_wy_gb$Overall != 0)
+gbm_imp0 = varImp(gbm_model_cv0_best, scale = FALSE)
+imp_wy_gb0 = gbm_imp0$importance
+imp_wy_gb0 = imp_wy_gb0 %>% mutate(Variable = row.names(imp_wy_gb0)) %>% 
+  filter(imp_wy_gb0$Overall != 0)
+
+gbm_imp2 = varImp(gbm_model_cv2_best, scale = FALSE)
+imp_wy_gb2 = gbm_imp2$importance
+imp_wy_gb2 = imp_wy_gb2 %>% mutate(Variable = row.names(imp_wy_gb2)) %>% 
+  filter(imp_wy_gb2$Overall != 0)
 
 ```
 
@@ -328,7 +425,8 @@ Save the above importance dataframes to be used in the Shiny App.
 
 ```{r}
 # This will export the importance rank datasets as csv files to be used in the shiny app. However, once again we will leave this commented out so that it doesn't export new csv files every time the workflow runs.
-saveRDS(imp_wy_gb, file = here("shiny", "aggregated_datasets", "imp_wy_gb.RDS"))
+saveRDS(imp_wy_gb0, file = here("shiny", "aggregated_datasets", "imp_wy_gb0.RDS"))
+saveRDS(imp_wy_gb2, file = here("shiny", "aggregated_datasets", "imp_wy_gb2.RDS"))
 ```
 
 # Model Evaluation

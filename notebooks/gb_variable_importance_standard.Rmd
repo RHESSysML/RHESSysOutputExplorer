@@ -40,6 +40,7 @@ library(party)
 library(partykit)
 library(permimp)
 library(gbm)
+library(spatialRF)
 ```
 
 
@@ -231,13 +232,10 @@ fitControl <- caret::trainControl(
   savePredictions = 'final')
 
 tune_grid <- expand.grid(
-  nrounds = seq(from = 100, to = 800, by = 50),
-  eta = c(0.01, 0.02, 0.05, 0.1, 0.3),
-  max_depth = c(2, 3, 4, 5, 6), 
-  gamma = c(0, 10, 50),
-  colsample_bytree = c(.5, .7, .8, 1),
-  min_child_weight = 1,
-  subsample = c(.5, .7, .8, 1))
+  n.trees = seq(from = 200, to = 800, by = 50),
+  shrinkage = c(0.01, 0.02, 0.05, 0.1, 0.3),
+  interaction.depth = c(2, 3, 4, 5, 6), 
+  n.minobsinnode = c(10, 30, 50))
 ```
 
 Note: these parameters are unique to the `gbm` package; there are many packages to implement gradient boosting 
