@@ -46,28 +46,43 @@ server <- function(input, output) {
   # Create reactive data frame for visualizations tab plot
   df_wy_reactive <- reactive({
     validate(
-      need(
-        length(input$stratum_sel) > 0,
-        "No data contained in selected strata. Please select more strata."
-      ),
-      need(
-        length(input$topo_sel) > 0,
-        "No data contained in selected topographies. Please select more topography types."
-      ),
-      need(
-        length(input$clim_sel) > 0,
-        "Must have atleast one climate scenario selected."
-      )
+      if ("stratumID" %in% colnames(df_wy)) {
+        need(
+          length(input$stratum_sel) > 0,
+          "No data contained in selected strata. Please select more strata."
+        )
+      },
+      if ("topo" %in% colnames(df_wy)) {
+        need(
+          length(input$topo_sel) > 0,
+          "No data contained in selected topographies. Please select more topography types."
+        )
+      },
+      if ("clim" %in% colnames(df_wy)) {
+        need(
+          length(input$clim_sel) > 0,
+          "Must have atleast one climate scenario selected."
+        )
+      }
     )
 
-    df_wy %>%
-      mutate(quantile = paste0("Quantile ", ntile(!!input$facet_variable, input$quantile_sel))) %>%
-      filter(
-        stratumID %in% input$stratum_sel,
-        topo %in% input$topo_sel,
-        clim %in% input$clim_sel,
-        wy %in% input$wy_sel[1]:input$wy_sel[2]
-      )
+    reactive_df <- df_wy %>%
+      mutate(quantile = paste0("Quantile ", ntile(!!input$facet_variable, input$quantile_sel)))
+    
+    if ("stratumID" %in% colnames(df_wy)) {
+      reactive_df <- reactive_df %>% filter(stratumID %in% input$stratum_sel)
+    }
+    
+    if ("topo" %in% colnames(df_wy)) {
+      reactive_df <- reactive_df %>% filter(topo %in% input$topo_sel)
+    }
+    
+    if ("clim" %in% colnames(df_wy)) {
+      reactive_df <- reactive_df %>% filter(clim %in% input$clim_sel)
+    }
+    
+    return(reactive_df)
+    
   })
 
   # Create visualizations plot
