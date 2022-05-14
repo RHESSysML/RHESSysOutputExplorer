@@ -52,6 +52,8 @@ Note that this workflow will use data that is aggregated by water year but **not
 ```{r}
 load(here("data", "prepared_data.RData"))
 
+# Rproj shenanigans
+load(here("../RHESSysML/data/prepared_data.RData"))
 ```
 
 First, we want to get a summary description of the data set. This is crucial for many reasons:
@@ -68,6 +70,27 @@ source(here("R", "summarize_data.R"))
 summarize_data(df_wy)
 ```
 
+We can also look at the key study area characteristics. In this Sagehen Creek study area, there are six landscape positions where RHESSys was run.
+
+```{r describe_strata}
+strata <- df_wy %>%
+  filter(clim == 0) %>% 
+  select(c(stratumID, topo, elev, aspect, slope)) %>%
+  group_by(stratumID, topo) %>% 
+  summarize_if(is.numeric, mean) %>% 
+  mutate(topo = case_when(topo == "M" ~ "Mid-Slope",
+                          topo == "U" ~ "Upslope",
+                          topo == "R" ~ "Riparian")) %>%
+  dplyr::arrange(topo) %>%
+  rename("Stratum" = stratumID,
+         "Topo" = topo,
+         "Elevation (m)" = elev,
+         "Aspect (degrees CCW from East)" = aspect,
+         "Slope (degrees)" = slope)
+
+DT::datatable(strata,
+              caption = "Summary of 6 landscape positions in the Sagehen Creek study area")
+```
 
 # Remove Multicollinearity
 
@@ -106,7 +129,7 @@ Below, there are two methods for setting preference order: (1) Manually creating
 #pref_order2 <- c("precip", "rz_storage", "trans", "evap")
 ```
 
-2. Run this chunk to allow preliminary random forest to automatically determine preference order. Note: even though we will be using gradient boosting here for the actual analysis, preliminary importance is set using a random forest because it is faster.
+2. Run this chunk to allow preliminary random forest to automatically determine preference order. Note: even though we will be using Gradient Boosting her for the actual analysis, preliminary importance is set using a Random Forest because it is faster.
 
 ```{r auto_preference_order, warning=FALSE}
 
