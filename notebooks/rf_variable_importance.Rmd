@@ -53,7 +53,7 @@ library(fastshap)
 ```
 
 ```{r}
-load(here("data", "prepared_data.RData"))
+load(here::here("data", "prepared_data.RData"))
 ```
 
 
@@ -68,7 +68,7 @@ Next, we want to get a summary description of the data set. This is crucial for 
 Here, we display summary statistics for the base climate scenario data.
 
 ```{r describe_data}
-source(here("R", "summarize_data.R"))
+source(here::here("R", "summarize_data.R"))
 
 summarize_data(df_wy0)
 summarize_data(df_wy2)
@@ -183,8 +183,8 @@ cor.threshold = 0.75
 ```
 
 ```{r remove_multicollinearity, warning = FALSE}
-source(here("R", "remove_vif.R"))
-source(here("R", "remove_cor.R"))
+source(here::here("R", "remove_vif.R"))
+source(here::here("R", "remove_cor.R"))
 
 # Create list of selected variables
 wy0_vif <- remove_vif(df_wy0_num_preds, vif.threshold = vif.threshold, pref_order0)$selected.variables
@@ -214,10 +214,10 @@ The next step is intended to elucidate the previous multicollinearity reduction 
 
 
 ```{r summarize_cor_function, class.source='fold-hide'}
-source(here("R", "summarize_removed_vars.R"))
-source(here("R", "summarize_cor.R"))
-source(here("R", "plot_removed_imp.R"))
-source(here("R", "plot_removed_vif.R"))
+source(here::here("R", "summarize_removed_vars.R"))
+source(here::here("R", "summarize_cor.R"))
+source(here::here("R", "plot_removed_imp.R"))
+source(here::here("R", "plot_removed_vif.R"))
 ```
 
 
@@ -296,7 +296,7 @@ df_wy2_reduced <- as.data.frame(df_wy2_reduced)
 Next, we run the function for both climate scenario data sets and visualize the results. Model error here is assessed using out-of-bag (OOB) observations in the data, which refers to observations that were not sampled during bootstrapping for the particular Random Forest being assessed. In other words OOB data were not used to train the model and can be used to test accuracy without the risk of bias incurred from model over-fitting. The best `mtry value` in the plots below will be represented by the lowest `OOB Error`.
 
 ```{r tune_rf_wy0, warning = FALSE}
-source(here("R", "tune_rf_model.R"))
+source(here::here("R", "tune_rf_model.R"))
 
 set.seed(4326)
 
@@ -357,8 +357,8 @@ rf_wy2 <- train(x = df_wy2_reduced %>% select(!response),
 
 ```{r save_rf_models}
 # save models for the Shiny app
-saveRDS(rf_wy0, here("data", "rf_wy0.RDS"))
-saveRDS(rf_wy2, here("data", "rf_wy2.RDS"))
+saveRDS(rf_wy0, here::here("data", "rf_wy0.RDS"))
+saveRDS(rf_wy2, here::here("data", "rf_wy2.RDS"))
 ```
 
 Assessing feature importance is a complex task with many possible approaches. Tree based models like random forest offer convenient "split-improvement" measures, like mean increase in purity and minimum depth, which are intrinsically derived during model construction. However, these have been shown to be biased towards variables with many categories or large value ranges (Strobl et al. 2007). Despite some of their shortcomings, these importance measures can provide insights are further explored at the end of this document.
@@ -388,8 +388,8 @@ Save the above importance dataframes to be used in the Shiny App.
 ```{r}
 # This will export the importance rank datasets as csv files to be used in the shiny app. However, once again we will leave this commented out so that it doesn't export new csv files every time the workflow runs.
 
-saveRDS(imp_wy0, file = here("shiny", "aggregated_datasets", "imp_wy0.RDS"))
-saveRDS(imp_wy2, file = here("shiny", "aggregated_datasets", "imp_wy2.RDS"))
+saveRDS(imp_wy0, file = here::here("shiny", "aggregated_datasets", "imp_wy0.RDS"))
+saveRDS(imp_wy2, file = here::here("shiny", "aggregated_datasets", "imp_wy2.RDS"))
 ```
 
 
@@ -423,7 +423,7 @@ Now, we can visualize the results of the Random Forest feature selection.
 The following table shows the relative importance of predictor variables between the two climate scenarios.
 
 ```{r}
-source(here("R", "df_imp_table.R"))
+source(here::here("R", "df_imp_table.R"))
 
 df_imp_table(imp_wy0, imp_wy2)
 ```
@@ -433,7 +433,7 @@ We see that precipitation and rz_storage are the first and second most important
 This same information is plotted below. The variable importance plots also reveal relative magnitude of importance between variables. 
 
 ```{r plot_imp}
-source(here("R", "plot_imp.R"))
+source(here::here("R", "plot_imp.R"))
 
 wy0_plot <- plot_imp(imp_wy0)
 wy2_plot <- plot_imp(imp_wy2)
@@ -447,7 +447,7 @@ The variable importance values derived from our Random Forest model allow us to 
 
 
 ```{r}
-source(here("R", "get_important_predictors.R"))
+source(here::here("R", "get_important_predictors.R"))
 
 # assigning first and second most important variables to objects
 pred1_clim0 <- get_important_predictors(imp_wy0, 1)
@@ -455,7 +455,7 @@ pred2_clim0 <- get_important_predictors(imp_wy0, 2)
 pred1_clim2 <- get_important_predictors(imp_wy2, 1)
 pred2_clim2 <- get_important_predictors(imp_wy2, 2)
 
-source(here("R", "create_binned_df.R"))
+source(here::here("R", "create_binned_df.R"))
 
 df0_pred_binned <- create_binned_df(df_wy0)
 df2_pred_binned <- create_binned_df(df_wy2)
@@ -470,7 +470,7 @@ ggplot(df0_pred_binned, aes(x = pred1, y = .data[["response"]])) +
                      "in 0 degree climate scenario")) +
   theme_minimal()
 
-source(here("R", "create_binned_plot.R"))
+source(here::here("R", "create_binned_plot.R"))
 
 create_binned_plot(df0_pred_binned)
 create_binned_plot(df2_pred_binned)

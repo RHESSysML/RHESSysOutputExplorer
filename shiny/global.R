@@ -19,14 +19,14 @@ library(randomForest)
 
 ######### Source functions ########## 
 
-source(here("R", "plot_imp.R"))
-source(here("R", "plotly_partial_dependence.R"))
-source(here("R", "full_name_units.R"))
+source(here::here("R", "plot_imp.R"))
+source(here::here("R", "plotly_partial_dependence.R"))
+source(here::here("R", "full_name_units.R"))
 
 
 ########## Set working directory ########## 
 
-setwd(here())
+setwd(here::here())
 
 
 ########## Get datasets from the feature importance workflow ########## 
@@ -34,44 +34,44 @@ setwd(here())
 # Original and Aggregate Datasets -----------------------------------------
 
 # Raw dataset
-df <- readRDS(here("data", "sageres.RDS")) %>% 
+df <- readRDS(here::here("data", "sageres.RDS")) %>% 
   as.data.frame()
 
 # Main aggregated dataset
-df_wy <- readRDS(here("shiny", "aggregated_datasets", "df_wy.RDS")) %>%
+df_wy <- readRDS(here::here("shiny", "aggregated_datasets", "df_wy.RDS")) %>%
   as.data.frame()
 
 # Aggregated dataset for climate scenario 0
-df_wy0 <- readRDS(here("shiny", "aggregated_datasets", "df_wy0.RDS")) %>%
+df_wy0 <- readRDS(here::here("shiny", "aggregated_datasets", "df_wy0.RDS")) %>%
   as.data.frame()
 
 # Aggregated dataset for climate scenario 2
-df_wy2 <- readRDS(here("shiny", "aggregated_datasets", "df_wy2.RDS")) %>%
+df_wy2 <- readRDS(here::here("shiny", "aggregated_datasets", "df_wy2.RDS")) %>%
   as.data.frame()
 
 all_datasets <- c("df", "df_wy", "df_wy0", "df_wy2")
 
 # Variable Importance Datasets --------------------------------------------
 
-imp_wy0 <- readRDS(here("shiny", "aggregated_datasets", "imp_wy0.RDS")) %>%
+imp_wy0 <- readRDS(here::here("shiny", "aggregated_datasets", "imp_wy0.RDS")) %>%
   arrange(Rank) %>%
   as.data.frame()
 
-imp_wy2 <- readRDS(here("shiny", "aggregated_datasets", "imp_wy2.RDS")) %>%
+imp_wy2 <- readRDS(here::here("shiny", "aggregated_datasets", "imp_wy2.RDS")) %>%
   arrange(Rank) %>%
   as.data.frame()
 
 # Metadata Table ----------------------------------------------------------
 
-metadata <- readRDS(here("shiny", "aggregated_datasets", "metadata.RDS")) %>%
+metadata <- readRDS(here::here("shiny", "aggregated_datasets", "metadata.RDS")) %>%
   select("variable", "full_name", "units", "description") %>%
   as.data.frame()
 
 # Partial Dependence Plot Data --------------------------------------------
 
 # Get random forest models
-rf_wy0 <- readRDS(here("data", "rf_wy0.RDS"))
-rf_wy2 <- readRDS(here("data", "rf_wy2.RDS"))
+rf_wy0 <- readRDS(here::here("data", "rf_wy0.RDS"))
+rf_wy2 <- readRDS(here::here("data", "rf_wy2.RDS"))
 
 # Create reduced data frames from the random forest models
 df_wy0_reduced <- df_wy0 %>%
@@ -85,13 +85,6 @@ df_wy2_reduced <- df_wy2 %>%
 
 factor_vars <- c("stratumID", "scen", "topo")
 response_var <- colnames(df_wy[1])
-
-# Convert categorical variables to factors
-df_wy[, factor_vars] <- lapply(df_wy[, factor_vars], factor)
-df_wy$clim <- as.factor(df_wy$clim)
-df_wy0[, factor_vars] <- lapply(df_wy0[, factor_vars], factor)
-df_wy2[, factor_vars] <- lapply(df_wy2[, factor_vars], factor)
-
 
 ######### Text for the welcome page ########## 
 
