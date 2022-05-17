@@ -17,7 +17,7 @@ library(here)
 ## Load Data
 
 ```{r load_data, message = FALSE}
-df <- readRDS(here("data", "sageres.RDS")) 
+df <- readRDS(here::here("data", "sageres.RDS")) 
 ```
 
 ## Clean and Aggregate Data
@@ -180,12 +180,12 @@ df_export_wy2 <- rename(.data = df_wy2, !!response_var := response)
 # write.csv(df_export_wy0, file = here("shiny", "aggregated_datasets", "df_wy0.csv"), row.names = FALSE)
 # write.csv(df_export_wy2, file = here("shiny", "aggregated_datasets", "df_wy2.csv"), row.names = FALSE)
 
-saveRDS(df_export, file = here("shiny", "aggregated_datasets", "df_wy.RDS"))
-saveRDS(df_export_wy0, file = here("shiny", "aggregated_datasets", "df_wy0.RDS"))
-saveRDS(df_export_wy2, file = here("shiny", "aggregated_datasets", "df_wy2.RDS"))
+saveRDS(df_export, file = here::here("shiny", "aggregated_datasets", "df_wy.RDS"))
+saveRDS(df_export_wy0, file = here::here("shiny", "aggregated_datasets", "df_wy0.RDS"))
+saveRDS(df_export_wy2, file = here::here("shiny", "aggregated_datasets", "df_wy2.RDS"))
 ```
 
 ```{r}
-save.image(here("data", "prepared_data.RData"))
+save.image(here::here("data", "prepared_data.RData"))
 ```
 

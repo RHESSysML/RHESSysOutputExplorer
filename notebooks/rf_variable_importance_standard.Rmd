@@ -53,7 +53,7 @@ library(fastshap)
 ```
 
 ```{r}
-load(here("data", "prepared_data_standard.RData"))
+load(here::here("data", "prepared_data_standard.RData"))
 ```
 
 
@@ -68,7 +68,7 @@ Next, we want to get a summary description of the data set. This is crucial for 
 Here, we display summary statistics for the base climate scenario data.
 
 ```{r describe_data}
-source(here("R", "summarize_data.R"))
+source(here::here("R", "summarize_data.R"))
 
 summarize_data(df_wy)
 ```
@@ -137,8 +137,8 @@ cor.threshold = 0.8
 ```
 
 ```{r remove_multicollinearity, warning = FALSE}
-source(here("R", "remove_vif.R"))
-source(here("R", "remove_cor.R"))
+source(here::here("R", "remove_vif.R"))
+source(here::here("R", "remove_cor.R"))
 
 # Removing columns with no variance
 no_var <- sapply(df_wy_num_preds, function(col) var(col) == 0)
@@ -163,10 +163,10 @@ The next step is intended to elucidate the previous multicollinearity reduction 
 
 
 ```{r summarize_cor_function, class.source='fold-hide'}
-source(here("R", "summarize_removed_vars.R"))
-source(here("R", "summarize_cor.R"))
-source(here("R", "plot_removed_imp.R"))
-source(here("R", "plot_removed_vif.R"))
+source(here::here("R", "summarize_removed_vars.R"))
+source(here::here("R", "summarize_cor.R"))
+source(here::here("R", "plot_removed_imp.R"))
+source(here::here("R", "plot_removed_vif.R"))
 ```
 
 
@@ -218,7 +218,7 @@ df_wy_reduced <- as.data.frame(df_wy_reduced)
 Next, we run the function for both climate scenario data sets and visualize the results. Model error here is assessed using out-of-bag (OOB) observations in the data, which refers to observations that were not sampled during bootstrapping for the particular Random Forest being assessed. In other words OOB data were not used to train the model and can be used to test accuracy without the risk of bias incurred from model over-fitting. The best `mtry value` in the plots below will be represented by the lowest `OOB Error`.
 
 ```{r tune_rf_wy, warning = FALSE}
-source(here("R", "tune_rf_model.R"))
+source(here::here("R", "tune_rf_model.R"))
 
 set.seed(4326)
 
@@ -326,7 +326,7 @@ We see that precipitation and rz_storage are the first and second most important
 This same information is plotted below. The variable importance plots also reveal relative magnitude of importance between variables. 
 
 ```{r plot_imp}
-source(here("R", "plot_imp.R"))
+source(here::here("R", "plot_imp.R"))
 
 wy_plot <- plot_imp(imp_wy)
 wy_plot
@@ -338,13 +338,13 @@ The variable importance values derived from our Random Forest model allow us to 
 
 
 ```{r}
-source(here("R", "get_important_predictors.R"))
+source(here::here("R", "get_important_predictors.R"))
 
 # assigning first and second most important variables to objects
 pred1 <- get_important_predictors(imp_wy, 1)
 pred2 <- get_important_predictors(imp_wy, 2)
 
-source(here("R", "create_binned_df.R"))
+source(here::here("R", "create_binned_df.R"))
 
 df_pred_binned <- create_binned_df(df_wy)
 ```
@@ -358,7 +358,7 @@ ggplot(df_pred_binned, aes(x = pred1, y = .data[["response"]])) +
                      "in 0 degree climate scenario")) +
   theme_minimal()
 
-source(here("R", "create_binned_plot.R"))
+source(here::here("R", "create_binned_plot.R"))
 
 create_binned_plot(df_pred_binned)
 ```
