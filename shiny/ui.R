@@ -36,10 +36,18 @@ ui <- fluidPage(
     tabPanel(
       "Visualizations",
       sidebarPanel(
-        stratum_sel,
-        topo_sel,
-        clim_sel,
-        wy_sel,
+        if ("stratumID" %in% colnames(df_wy)) {
+          stratum_sel
+        },
+        if ("topo" %in% colnames(df_wy)) {  
+          topo_sel
+        },
+        if ("clim" %in% colnames(df_wy)) {
+          clim_sel
+        },
+        if ("wy" %in% colnames(df_wy)) {
+          wy_sel
+        },
         "Variables to Explore:",
         independent_variable,
         facet_variable,
