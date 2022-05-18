@@ -91,8 +91,8 @@ server <- function(input, output) {
       x = !!input$independent_variable,
       y = df_wy_reactive()[, response_var]
     )) +
-      geom_point(aes(color = clim)) +
-      geom_smooth(se = FALSE, method = lm, color = "#B251F1") +
+      geom_point(aes(color = clim), size = 0.75) +
+      geom_smooth(se = FALSE, method = lm, color = "#B251F1", size = 0.75) +
       scale_color_manual(values = c(
         "0" = "#FEA346",
         "2" = "#4BA4A4"
@@ -111,7 +111,7 @@ server <- function(input, output) {
       ) +
       facet_wrap(~quantile) +
       theme_light() +
-      theme(text = element_text(size = 17))
+      theme(text = element_text(size = 10))
 
     ggplotly(p)
   })

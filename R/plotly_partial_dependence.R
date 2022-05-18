@@ -49,10 +49,11 @@ plotly_partial_dependence <- function(x,
     layout(
       scene = list(
         camera = list(eye = list(x = -1.5, y = -1.5, z = 1.25)),
-        xaxis = list(title = v1), 
-        yaxis = list(title = v2),
+        xaxis = list(title = full_name_units(v1, metadata)), 
+        yaxis = list(title = full_name_units(v2, metadata)),
         zaxis = list(title = "Predicted Value")
-        )
+        ),
+      font = list(size = 9)
       )
   
   return(fig)
