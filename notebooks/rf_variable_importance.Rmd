@@ -214,7 +214,7 @@ The next step is intended to elucidate the previous multicollinearity reduction 
 
 
 ```{r summarize_cor_function, class.source='fold-hide'}
-source(here::here("R", "summarize_removed_vars.R"))
+source(here::here("R", "summarize_var_removal.R"))
 source(here::here("R", "summarize_cor.R"))
 source(here::here("R", "plot_removed_imp.R"))
 source(here::here("R", "plot_removed_vif.R"))
@@ -228,25 +228,7 @@ The following functions output two tables and two plots of all variables indicat
 #### VIF Summary Table
 
 ```{r vif_summary_table_0, warning=FALSE}
-summarize_removed_vars(reduced_df = df_wy0_num_preds, table = TRUE)
-```
-
-#### Correlation Summary Table
-
-```{r cor_summary_table_0}
-summarize_cor(reduced_df = df_wy0_num_preds, selected_removed = "removed")
-```
-
-#### Importance Summary Plot
-
-```{r imp_summary_plot_0, warning=FALSE}
-plot_removed_imp(df_wy0_num_preds)
-```
-
-#### VIF Summary Plot
-
-```{r vif_summary_plot_0, warning=FALSE}
-plot_removed_vif(df_wy0_num_preds)
+summarize_var_removal(df_wy0_num_preds, table = TRUE)
 ```
 
 
@@ -255,26 +237,9 @@ plot_removed_vif(df_wy0_num_preds)
 #### VIF Summary Table
 
 ```{r vif_summary_table_2, warning=FALSE}
-summarize_removed_vars(df_wy2_num_preds, table = TRUE)
+summarize_var_removal(df_wy2_num_preds, table = TRUE)
 ```
 
-#### Correlation Summary Table
-
-```{r cor_summary_table_2}
-summarize_cor(df_wy2_num_preds, selected_removed = "removed")
-```
-
-#### Importance Summary Plot
-
-```{r imp_summary_plot_2, warning=FALSE}
-plot_removed_imp(df_wy2_num_preds)
-```
-
-#### VIF Summary Plot
-
-```{r vif_summary_plot_2, warning=FALSE}
-plot_removed_vif(df_wy2_num_preds)
-```
 
 # Feature Importance
 
