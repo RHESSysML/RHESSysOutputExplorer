@@ -98,7 +98,9 @@ intro_3 <- "- The \"Variable Importance\" tab will display variable importance f
 
 intro_4 <- "- The \"Visualizations\" tab will allow you to explore your data's variables and their relationships."
 
-importance_caption <- "The above graphs uses the random forest workflow to rank how important each varible is in predicting your responce variable, in this case Net Primary Productivity. The graph on the left ranks the variables in a normal climate scenario, and the graph on the right ranks the variables in a +2 degree C cliamte warming scenario."
+importance_caption <- paste0("The above graphs uses the random forest workflow to rank how important each varible is in predicting your response variable, in this case", 
+                             full_name_units(response_var, metadata, units = FALSE), 
+                             ". The graph on the left ranks the variables in a normal climate scenario, and the graph on the right ranks the variables in a +2 degree C climate warming scenario.")
 
 
 ########## Inputs ########## 

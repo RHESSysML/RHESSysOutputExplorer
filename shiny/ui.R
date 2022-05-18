@@ -29,7 +29,7 @@ ui <- fluidPage(
     tabPanel(
       "Variable Importance",
       tags$h3("Random Forest Variable Importance Output:"),
-      tags$p(paste0("Your Response Variable: ", response_var)),
+      tags$p(paste0("Your Response Variable: ", full_name_units(response_var, metadata, units = FALSE))),
       plotOutput(outputId = "imp_plot", height = 550),
       tags$p(importance_caption)
     ),
