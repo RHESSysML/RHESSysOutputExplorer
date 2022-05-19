@@ -214,67 +214,42 @@ The next step is intended to elucidate the previous multicollinearity reduction 
 
 
 ```{r summarize_cor_function, class.source='fold-hide'}
-source(here::here("R", "summarize_removed_vars.R"))
-source(here::here("R", "summarize_cor.R"))
-source(here::here("R", "plot_removed_imp.R"))
-source(here::here("R", "plot_removed_vif.R"))
+source(here::here("R", "summarize_var_removal.R"))
+source(here::here("R", "plot_removed_cor.R"))
 ```
 
 
-The following functions output two tables and two plots of all variables indicating selection status and the criteria by which those selections were made. The first table shows preliminary importance and VIF, and the second shows correlation between each variable combination. Preliminary importance and VIF are also plotted visually in the two bar charts. 
+The following functions output summary tables and plots showing variable selection status and the values of VIF, correlation, and importance which led to those selections. 
 
 ### Climate Scenario 0 {.tabset}
 
-#### VIF Summary Table
+#### Variable Removal Summary Table
 
 ```{r vif_summary_table_0, warning=FALSE}
-summarize_removed_vars(reduced_df = df_wy0_num_preds, table = TRUE)
+summarize_var_removal(df_wy0_num_preds, table = TRUE)
 ```
 
-#### Correlation Summary Table
+#### Cor Summary Plot
 
-```{r cor_summary_table_0}
-summarize_cor(reduced_df = df_wy0_num_preds, selected_removed = "removed")
-```
-
-#### Importance Summary Plot
-
-```{r imp_summary_plot_0, warning=FALSE}
-plot_removed_imp(df_wy0_num_preds)
-```
-
-#### VIF Summary Plot
-
-```{r vif_summary_plot_0, warning=FALSE}
-plot_removed_vif(df_wy0_num_preds)
+```{r}
+plot_cor(wy0_select_variables, df_wy0_num_preds)
 ```
 
 
 ### Climate Scenario 2 {.tabset}
 
-#### VIF Summary Table
+#### Variable Removal Summary Table
 
 ```{r vif_summary_table_2, warning=FALSE}
-summarize_removed_vars(df_wy2_num_preds, table = TRUE)
+summarize_var_removal(df_wy2_num_preds, table = TRUE)
 ```
 
-#### Correlation Summary Table
+#### Cor Summary Plot
 
-```{r cor_summary_table_2}
-summarize_cor(df_wy2_num_preds, selected_removed = "removed")
+```{r}
+plot_cor(wy2_select_variables, df_wy2_num_preds)
 ```
 
-#### Importance Summary Plot
-
-```{r imp_summary_plot_2, warning=FALSE}
-plot_removed_imp(df_wy2_num_preds)
-```
-
-#### VIF Summary Plot
-
-```{r vif_summary_plot_2, warning=FALSE}
-plot_removed_vif(df_wy2_num_preds)
-```
 
 # Feature Importance
 
