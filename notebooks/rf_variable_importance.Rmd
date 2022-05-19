@@ -215,29 +215,39 @@ The next step is intended to elucidate the previous multicollinearity reduction 
 
 ```{r summarize_cor_function, class.source='fold-hide'}
 source(here::here("R", "summarize_var_removal.R"))
-source(here::here("R", "summarize_cor.R"))
-source(here::here("R", "plot_removed_imp.R"))
-source(here::here("R", "plot_removed_vif.R"))
+source(here::here("R", "plot_removed_cor.R"))
 ```
 
 
-The following functions output two tables and two plots of all variables indicating selection status and the criteria by which those selections were made. The first table shows preliminary importance and VIF, and the second shows correlation between each variable combination. Preliminary importance and VIF are also plotted visually in the two bar charts. 
+The following functions output summary tables and plots showing variable selection status and the values of VIF, correlation, and importance which led to those selections. 
 
 ### Climate Scenario 0 {.tabset}
 
-#### VIF Summary Table
+#### Variable Removal Summary Table
 
 ```{r vif_summary_table_0, warning=FALSE}
 summarize_var_removal(df_wy0_num_preds, table = TRUE)
 ```
 
+#### Cor Summary Plot
+
+```{r}
+plot_cor(wy0_select_variables, df_wy0_num_preds)
+```
+
 
 ### Climate Scenario 2 {.tabset}
 
-#### VIF Summary Table
+#### Variable Removal Summary Table
 
 ```{r vif_summary_table_2, warning=FALSE}
 summarize_var_removal(df_wy2_num_preds, table = TRUE)
+```
+
+#### Cor Summary Plot
+
+```{r}
+plot_cor(wy2_select_variables, df_wy2_num_preds)
 ```
 
 
