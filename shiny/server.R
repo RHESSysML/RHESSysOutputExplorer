@@ -187,4 +187,26 @@ server <- function(input, output) {
       grid.size = 15
     )
   })
+  
+# Principal Component Analysis --------------------------------------------
+  
+  pca_data <- reactive({
+    pca_data <- get(input$pca_data_select)
+  })
+  
+  output$pca_plot <- renderPlotly({
+    plot_data <- pca_data() %>%
+      select(where(is.numeric))
+    
+    pca <- stats::prcomp(plot_data, center = TRUE, scale. = TRUE)
+    
+    pca.plot <- ggbiplot(pca, 
+                         groups = pca_data()[, input$pca_group_select],
+                         alpha = input$pca_alpha, 
+                         ellipse = input$pca_ellipse) + 
+      theme_light()
+    
+    ggplotly(pca.plot)
+  })
+  
 }

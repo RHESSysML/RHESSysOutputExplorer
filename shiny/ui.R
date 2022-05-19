@@ -72,6 +72,21 @@ ui <- fluidPage(
         plotlyOutput(outputId = "partial_dep_plot") %>% 
           withSpinner(type = 6)
       )
+    ),
+    tabPanel(
+      "Principal Component Analysis",
+      sidebarPanel(
+        pca_data_select,
+        pca_group_select,
+        tags$h4("Draw a normal data ellipse for each group?"),
+        pca_ellipse,
+        pca_alpha
+      ),
+      mainPanel(
+        "Principal Components Plot",
+        plotlyOutput(outputId = "pca_plot") %>% 
+          withSpinner(type = 6)
+      )
     )
   )
 )

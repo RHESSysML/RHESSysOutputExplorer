@@ -14,6 +14,7 @@ library(kableExtra)
 library(psych)
 library(DT)
 library(plotly)
+library(ggbiplot)
 library(randomForest)
 
 
@@ -209,4 +210,29 @@ partial_dep_var2 <- selectInput("partial_dep_var2",
   label = tags$h4("Select Variable 2"),
   choices = colnames(df_wy0_reduced),
   multiple = FALSE
+)
+
+# Principal Component Analysis --------------------------------------------
+
+pca_data_select <- selectInput("pca_data_select",
+  label = tags$h4("Select your dataset"),
+  choices = all_datasets,
+  selected = all_datasets[2],
+  multiple = FALSE)
+
+pca_group_select <- selectInput("pca_group_select",
+  label = tags$h4("Select your groups (if any)"),
+  choices = c(colnames(df_wy)[sapply(df_wy, is.factor)]),
+  multiple = FALSE)
+
+pca_alpha <- sliderInput("pca_alpha",
+  label = tags$h4("Observation opacity"),
+  min = 0,
+  max = 1,
+  value = 0.25
+)
+
+pca_ellipse <- checkboxInput("pca_ellipse",
+  label = NULL,
+  value = FALSE
 )
