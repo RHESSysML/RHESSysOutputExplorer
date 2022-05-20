@@ -43,9 +43,51 @@ df2.pca <- prcomp(df2.pca, center = TRUE, scale. = TRUE)
 
 ## Summary of PCA
 
+### Percent Variance Explained
+
 ```{r}
-summary(df0.pca)
+get_num_pca <- function(pca, desired_proportion) {
+  summary <- data.frame(summary(pca)[["importance"]])
+  pcas <- sum(summary["Cumulative Proportion", ] < desired_proportion) + 1
+  print(paste0(desired_proportion*100, "% variance explained by ", pcas, " PCAs"))
+}
+
+get_num_pca(df0.pca, 0.8)
 ```
+
+### Scree Plot
+
+```{r}
+#calculate total variance explained by each principal component
+var_explained = df0.pca$sdev^2 / sum(df0.pca$sdev^2)
+
+#create scree plot
+qplot(c(1:19), var_explained) + 
+  geom_line() + 
+  xlab("Principal Component") + 
+  ylab("Variance Explained") +
+  ggtitle("Scree Plot") +
+  ylim(0, 1)
+```
+
+
+### Something
+
+```{r}
+# Helper function 
+#::::::::::::::::::::::::::::::::::::::::
+var_coord_func <- function(loadings, comp.sdev){
+  loadings*comp.sdev
+}
+# Compute Coordinates
+#::::::::::::::::::::::::::::::::::::::::
+loadings <- df0.pca$rotation
+sdev <- df0.pca$sdev
+var.coord <- t(apply(loadings, 1, var_coord_func, sdev)) 
+
+data.frame(var.coord[, 1:4]) %>% arrange(PC1)
+```
+
 
 ## Visualizations
 
@@ -56,18 +98,36 @@ summary(df2.pca)
 ```
 
 ```{r}
-pca0.plot <- ggbiplot(df0.pca, groups = df0$topo, alpha = 0.25) + 
+pca0.plot <- ggbiplot(df0.pca, groups = df0$topo, alpha = 0.5, ellipse = TRUE) + 
+  theme_light()
+
+ggplotly(pca0.plot)
+
+```
+
+```{r}
+pca0.plot <- ggbiplot(df0.pca, groups = df0$topo, alpha = 0.5, scale = TRUE, circle=TRUE) + 
   theme_light()
 
 ggplotly(pca0.plot)
 ```
 
 ```{r}
-pca2.plot <- ggbiplot(df2.pca, groups = df2$topo, alpha = 0.25) +
+pca0.scree <- ggscreeplot(df0.pca) +
+  theme_light()
+
+ggplotly(pca0.scree)
+```
+
+
+```{r}
+pca2.plot <- ggbiplot(df2.pca, groups = df2$topo, alpha = 0.5) +
   theme_light()
 
 ggplotly(pca2.plot)
 ```
+
+
 
 ### PC3 & PC4
 

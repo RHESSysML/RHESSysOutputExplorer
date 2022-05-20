@@ -68,21 +68,20 @@ server <- function(input, output) {
 
     reactive_df <- df_wy %>%
       mutate(quantile = paste0("Quantile ", ntile(!!input$facet_variable, input$quantile_sel)))
-    
+
     if ("stratumID" %in% colnames(df_wy)) {
       reactive_df <- reactive_df %>% filter(stratumID %in% input$stratum_sel)
     }
-    
+
     if ("topo" %in% colnames(df_wy)) {
       reactive_df <- reactive_df %>% filter(topo %in% input$topo_sel)
     }
-    
+
     if ("clim" %in% colnames(df_wy)) {
       reactive_df <- reactive_df %>% filter(clim %in% input$clim_sel)
     }
-    
+
     return(reactive_df)
-    
   })
 
   # Create visualizations plot
@@ -200,5 +199,70 @@ server <- function(input, output) {
       v2 = input$partial_dep_var2,
       grid.size = 15
     )
+  })
+
+  # Principal Component Analysis --------------------------------------------
+
+  pca_data <- reactive({
+    pca_data <- get(input$pca_data_select)
+  })
+
+  output$pca_plot <- renderPlotly({
+    plot_data <- pca_data() %>%
+      select(where(is.numeric))
+
+    pca <- stats::prcomp(plot_data, center = TRUE, scale. = TRUE)
+
+    pca.plot <- ggbiplot::ggbiplot(pca,
+      groups = pca_data()[, input$pca_group_select],
+      alpha = input$pca_alpha,
+      ellipse = input$pca_ellipse
+    ) +
+      theme_light()
+
+    ggplotly(pca.plot)
+  })
+
+  # Distribution Plots ------------------------------------------------------
+
+  dist_data <- reactive({
+    dist_data <- get(input$dist_data_select)
+  })
+
+  output$dist_plot <- renderPlot({
+    ggplot(dist_data(), aes(y = dist_data()[, input$dist_num_select], fill = dist_data()[, input$dist_group_select])) +
+      scale_fill_discrete(name = input$dist_group_select) +
+      labs(y = input$dist_num_select) +
+      theme_light() +
+      geom_boxplot()
+  })
+
+  output$dist_hist <- renderPlot({
+    ggplot(dist_data(), aes(x = dist_data()[, input$dist_num_select])) +
+      geom_histogram() +
+      theme_light() +
+      labs(x = input$dist_num_select) +
+      facet_wrap(~ dist_data()[, input$dist_group_select])
+  })
+
+  # Time Series Plots -------------------------------------------------------
+
+  ts_data <- reactive({
+    ts_data <- get(input$ts_data_select)
+  })
+  
+  ts_plot_data <- reactive({
+    ts_data() # %>% 
+      # group_by(!!input$ts_time_select, !!input$ts_group_select) %>% 
+      # summarize_if(is.numeric, mean) %>% 
+      # ungroup()
+  })
+  
+  output$ts_plot <- renderPlot({
+    ggplot(ts_plot_data(), aes(x = ts_plot_data()[, input$ts_time_select], 
+                               y = ts_plot_data()[, input$ts_num_select],
+                               color = ts_plot_data()[, input$ts_group_select])) +
+      theme_light() +
+      geom_line()
   })
 }
