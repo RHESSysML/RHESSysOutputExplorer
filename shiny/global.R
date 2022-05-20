@@ -17,6 +17,7 @@ library(DT)
 library(plotly)
 library(ggbiplot)
 library(randomForest)
+library(scales)
 
 
 ######### Source functions ########## 
