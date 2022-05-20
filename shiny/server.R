@@ -213,7 +213,7 @@ server <- function(input, output) {
 
     pca <- stats::prcomp(plot_data, center = TRUE, scale. = TRUE)
 
-    pca.plot <- ggbiplot(pca,
+    pca.plot <- ggbiplot::ggbiplot(pca,
       groups = pca_data()[, input$pca_group_select],
       alpha = input$pca_alpha,
       ellipse = input$pca_ellipse
