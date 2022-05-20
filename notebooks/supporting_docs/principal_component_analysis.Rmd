@@ -48,7 +48,7 @@ df2.pca <- prcomp(df2.pca, center = TRUE, scale. = TRUE)
 ```{r}
 get_num_pca <- function(pca, desired_proportion) {
   summary <- data.frame(summary(pca)[["importance"]])
-  pcas <- sum(summary_df0.pca["Cumulative Proportion", ] < desired_proportion) + 1
+  pcas <- sum(summary["Cumulative Proportion", ] < desired_proportion) + 1
   print(paste0(desired_proportion*100, "% variance explained by ", pcas, " PCAs"))
 }
 

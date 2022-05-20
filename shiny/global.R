@@ -4,6 +4,7 @@
 
 library(shiny)
 library(shinythemes)
+library(shinydashboard)
 library(shinycssloaders)
 library(tidyverse)
 library(tidyselect)
@@ -236,3 +237,54 @@ pca_ellipse <- checkboxInput("pca_ellipse",
   label = NULL,
   value = FALSE
 )
+
+# Distribution Plots ------------------------------------------------------
+
+dist_data_select <- selectInput("dist_data_select",
+  label = tags$h4("Select your dataset"),
+  choices = all_datasets,
+  selected = all_datasets[2],
+  multiple = FALSE
+)
+
+dist_group_select <- selectInput("dist_group_select",
+  label = tags$h4("Select your groups (if any)"),
+  choices = c(colnames(df_wy)[sapply(df_wy, is.factor)]),
+  multiple = FALSE
+)
+
+dist_num_select <- selectInput("dist_num_select",
+  label = tags$h4("Select numeric variable"),
+  choices = c(colnames(df_wy)[sapply(df_wy, is.numeric)]),
+  multiple = FALSE
+)
+
+# Time Series -------------------------------------------------------------
+
+ts_data_select <- selectInput("ts_data_select",
+  label = tags$h4("Select your dataset"),
+  choices = all_datasets,
+  selected = all_datasets[2],
+  multiple = FALSE
+)
+
+ts_group_select <- selectInput("ts_group_select",
+  label = tags$h4("Select your groups (if any)"),
+  choices = c(colnames(df_wy)[sapply(df_wy, is.factor)]),
+  multiple = FALSE
+)
+
+ts_num_select <- selectInput("ts_num_select",
+  label = tags$h4("Select numeric variable"),
+  choices = c(colnames(df_wy)[sapply(df_wy, is.numeric)]),
+  multiple = FALSE
+)
+
+ts_time_select <- selectInput("ts_time_select",
+  label = tags$h4("Select time variable"),
+  choices = c(colnames(df_wy)),
+  selected = "wy",
+  multiple = FALSE
+)
+
+

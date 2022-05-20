@@ -1,4 +1,4 @@
-########################## Create UI ########################## 
+########################## Create UI ##########################
 
 ui <- fluidPage(
   theme = shinytheme("readable"),
@@ -39,7 +39,7 @@ ui <- fluidPage(
         if ("stratumID" %in% colnames(df_wy)) {
           stratum_sel
         },
-        if ("topo" %in% colnames(df_wy)) {  
+        if ("topo" %in% colnames(df_wy)) {
           topo_sel
         },
         if ("clim" %in% colnames(df_wy)) {
@@ -55,37 +55,75 @@ ui <- fluidPage(
       ),
       mainPanel(
         "Visual Graph of your variable relationships:",
-        plotlyOutput(outputId = "variable_plot", height = 700) %>% 
+        plotlyOutput(outputId = "variable_plot", height = 700) %>%
           withSpinner(type = 6),
         DT::dataTableOutput("visualization_statistics")
       )
     ),
     tabPanel(
-      "Partial Dependence",
-      sidebarPanel(
-        partial_dep_model,
-        partial_dep_var1,
-        partial_dep_var2
-      ),
-      mainPanel(
-        "Bivariate Partial Depedence",
-        plotlyOutput(outputId = "partial_dep_plot") %>% 
-          withSpinner(type = 6)
-      )
-    ),
-    tabPanel(
-      "Principal Component Analysis",
-      sidebarPanel(
-        pca_data_select,
-        pca_group_select,
-        tags$h4("Draw a normal data ellipse for each group?"),
-        pca_ellipse,
-        pca_alpha
-      ),
-      mainPanel(
-        "Principal Components Plot",
-        plotlyOutput(outputId = "pca_plot") %>% 
-          withSpinner(type = 6)
+      "Variable Relationships",
+      tabBox(width = "100%",
+        tabPanel(
+          "Principal Component Analysis",
+          sidebarPanel(
+            pca_data_select,
+            pca_group_select,
+            tags$h4("Draw a normal data ellipse for each group?"),
+            pca_ellipse,
+            pca_alpha
+          ),
+          mainPanel(
+            br(),
+            "Principal Components Plot",
+            plotlyOutput(outputId = "pca_plot") %>%
+              withSpinner(type = 6)
+          )
+        ),
+        tabPanel(
+          "Distribution Plots",
+          sidebarPanel(
+            dist_data_select,
+            dist_num_select,
+            dist_group_select
+          ),
+          mainPanel(
+            br(),
+            "Boxplots and Histograms",
+            plotOutput(outputId = "dist_plot") %>%
+              withSpinner(type = 6),
+            plotOutput(outputId = "dist_hist") %>%
+              withSpinner(type = 6)
+          )
+        ),
+        tabPanel(
+          "Partial Dependence",
+          sidebarPanel(
+            partial_dep_model,
+            partial_dep_var1,
+            partial_dep_var2
+          ),
+          mainPanel(
+            br(),
+            "Bivariate Partial Dependence",
+            plotlyOutput(outputId = "partial_dep_plot") %>%
+              withSpinner(type = 6)
+          )
+        ),
+        tabPanel(
+          "Time Series",
+          sidebarPanel(
+            ts_data_select,
+            ts_time_select,
+            ts_num_select,
+            ts_group_select
+          ),
+          mainPanel(
+            br(),
+            "Time Series Plot",
+            plotOutput(outputId = "ts_plot") %>%
+              withSpinner(type = 6)
+          )
+        )
       )
     )
   )
