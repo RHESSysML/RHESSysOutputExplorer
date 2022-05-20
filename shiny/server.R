@@ -113,7 +113,21 @@ server <- function(input, output) {
       theme_light() +
       theme(text = element_text(size = 10))
 
-    ggplotly(p)
+    plotly_p <- ggplotly(p)
+    
+    text_x <- number(
+      plotly_p$x$data[[1]]$x,
+      prefix = paste0(full_name_units(input$independent_variable, metadata, units = FALSE), ": ")
+    )
+    
+    text_y <- number(
+      plotly_p$x$data[[1]]$y,
+      prefix = paste0(full_name_units(response_var, metadata, units = FALSE), ": "),
+      accuracy = 0.000000001
+    )
+    
+    plotly_p %>% 
+      style(text = paste0(text_y, "</br></br>", text_x))
   })
 
   output$visualization_statistics <- DT::renderDataTable({
