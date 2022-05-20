@@ -15,6 +15,7 @@ library(psych)
 library(DT)
 library(plotly)
 library(randomForest)
+library(scales)
 
 
 ######### Source functions ########## 
