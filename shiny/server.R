@@ -63,6 +63,12 @@ server <- function(input, output) {
           length(input$clim_sel) > 0,
           "Must have atleast one climate scenario selected."
         )
+      },
+      if ("wy" %in% colnames(df_wy)) {
+        need(
+          length(input$wy_sel) > 0,
+          "No data for selected years."
+        )
       }
     )
 
@@ -80,7 +86,11 @@ server <- function(input, output) {
     if ("clim" %in% colnames(df_wy)) {
       reactive_df <- reactive_df %>% filter(clim %in% input$clim_sel)
     }
-
+    
+    if ("wy" %in% colnames(df_wy)) {
+      reactive_df <- reactive_df %>% filter(wy %in% input$wy_sel[1]:input$wy_sel[2])
+    }
+    
     return(reactive_df)
   })
 
