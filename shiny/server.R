@@ -73,22 +73,22 @@ server <- function(input, output) {
     )
 
     reactive_df <- df_wy %>%
-      mutate(quantile = paste0("Quantile ", ntile(!!input$facet_variable, input$quantile_sel)))
+      dplyr::mutate(quantile = paste0("Quantile ", dplyr::ntile(!!input$facet_variable, input$quantile_sel)))
 
     if ("stratumID" %in% colnames(df_wy)) {
-      reactive_df <- reactive_df %>% filter(stratumID %in% input$stratum_sel)
+      reactive_df <- reactive_df %>% dplyr::filter(stratumID %in% input$stratum_sel)
     }
 
     if ("topo" %in% colnames(df_wy)) {
-      reactive_df <- reactive_df %>% filter(topo %in% input$topo_sel)
+      reactive_df <- reactive_df %>% dplyr::filter(topo %in% input$topo_sel)
     }
 
     if ("clim" %in% colnames(df_wy)) {
-      reactive_df <- reactive_df %>% filter(clim %in% input$clim_sel)
+      reactive_df <- reactive_df %>% dplyr::filter(clim %in% input$clim_sel)
     }
     
     if ("wy" %in% colnames(df_wy)) {
-      reactive_df <- reactive_df %>% filter(wy %in% input$wy_sel[1]:input$wy_sel[2])
+      reactive_df <- reactive_df %>% dplyr::filter(wy %in% input$wy_sel[1]:input$wy_sel[2])
     }
     
     return(reactive_df)
