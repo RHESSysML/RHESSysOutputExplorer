@@ -141,8 +141,8 @@ server <- function(input, output) {
 
   output$visualization_statistics <- DT::renderDataTable({
     df_wy_reactive() %>%
-      group_by(clim, quantile) %>%
-      summarize(
+      dplyr::group_by(clim, quantile) %>%
+      dplyr::summarize(
         "mean.y" = mean(df_wy_reactive()[, response_var]),
         "min.y" = min(df_wy_reactive()[, response_var]),
         "max.y" = max(df_wy_reactive()[, response_var]),
@@ -150,8 +150,8 @@ server <- function(input, output) {
         "min.x" = min(!!input$independent_variable),
         "max.x" = max(!!input$independent_variable)
       ) %>%
-      ungroup() %>%
-      mutate(across(where(is.numeric), round, 6)) %>%
+      dplyr::ungroup() %>%
+      dplyr::mutate(dplyr::across(where(is.numeric), round, 6)) %>%
       DT::datatable(options = list(dom = "t"))
   })
 
@@ -241,8 +241,8 @@ server <- function(input, output) {
 
   output$dist_plot <- renderPlot({
     ggplot(dist_data(), aes(y = dist_data()[, input$dist_num_select], fill = dist_data()[, input$dist_group_select])) +
-      scale_fill_discrete(name = input$dist_group_select) +
-      labs(y = input$dist_num_select) +
+      scale_fill_discrete(name = full_name_units(input$dist_group_select, metadata, units = FALSE)) +
+      labs(y = full_name_units(input$dist_num_select, metadata)) +
       theme_light() +
       geom_boxplot()
   })
@@ -251,7 +251,8 @@ server <- function(input, output) {
     ggplot(dist_data(), aes(x = dist_data()[, input$dist_num_select])) +
       geom_histogram() +
       theme_light() +
-      labs(x = input$dist_num_select) +
+      labs(x = full_name_units(input$dist_num_select, metadata),
+           y = "Count") +
       facet_wrap(~ dist_data()[, input$dist_group_select])
   })
 
