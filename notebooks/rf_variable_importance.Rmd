@@ -232,7 +232,7 @@ summarize_var_removal(df_wy0_num_preds, table = TRUE)
 #### Cor Summary Plot
 
 ```{r}
-plot_cor(wy0_select_variables, df_wy0_num_preds)
+plot_removed_cor(wy0_select_variables, df_wy0_num_preds)
 ```
 
 
@@ -247,17 +247,17 @@ summarize_var_removal(df_wy2_num_preds, table = TRUE)
 #### Cor Summary Plot
 
 ```{r}
-plot_cor(wy2_select_variables, df_wy2_num_preds)
+plot_removed_cor(wy2_select_variables, df_wy2_num_preds)
 ```
 
 
-# Feature Importance
+# Feature Importance with Random Forest
 
-With multicollinearity reduced, the importance of predictor variables can be estimated using Random Forest and partial permutation importance. In this framework, we use Random Forest because it has been shown to be an effective tool in assessing feature importance in numerous applications including ecological analysis (Cutler et al. 2007; Prasad et al. 2006). Additionally, Random Forest requires relatively less hyper-parameter tuning than other common techniques. 
+With multicollinearity reduced, the importance of predictor variables can be estimated using Random Forest and partial permutation importance. In this framework, we use Random Forest because it has been shown to be an effective tool in assessing feature importance in numerous applications including ecological analysis (Cutler et al. 2007; Prasad et al. 2006). Additionally, Random Forest requires relatively less hyper-parameter tuning than other common techniques such as gradient boosting, which is explored in separate workflows. 
 
 ### Hyper-Parameter Tuning
 
-An essential part of building a machine learning model is tuning hyper-parameters. This entails altering parameters which the user has control over in order to attain an optimal model accuracy. The following tuning process has been automated and only involves `mtry`---the primary parameter that requires adjustment in a Random Forest.
+An essential part of building a machine learning model is tuning hyper-parameters. This entails altering parameters which the user has control over in order to attain an optimal model accuracy. The following tuning process has been automated and only involves `mtry`---the primary parameter that requires adjustment in a random forest.
 
 The `mtry` parameter determines the number of variables randomly sampled as candidates at each split. The default value for regression is p/3, where p is the number of predictor variables.
 
@@ -393,7 +393,7 @@ The model for the +2 degree Celsius climate scenario explained `r rf_wy2_fit`% o
 
 # Visualize Results
 
-Now, we can visualize the results of the Random Forest feature selection.
+Now, we can visualize the results of the random forest feature selection.
 
 The following table shows the relative importance of predictor variables between the two climate scenarios.
 
@@ -418,7 +418,7 @@ wy0_plot + wy2_plot
 
 ## Previewing relationships between important predictors and NPP
 
-The variable importance values derived from our Random Forest model allow us to investigate interesting relationships and interactions between the response term and important predictors. Below, we investigate how NPP's relationship with the most important predictor is impacted by changes in other predictors in the model.
+The variable importance values derived from our random forest model allow us to investigate interesting relationships and interactions between the response term and important predictors. Below, we investigate how NPP's relationship with the most important predictor is impacted by changes in other predictors in the model.
 
 
 ```{r}

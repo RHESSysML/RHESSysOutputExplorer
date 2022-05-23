@@ -20,6 +20,10 @@ As you will see, the extra time and computational demands of creating a gradient
 
 # Setup
 
+## renv:
+
+To help ensure reproducibility, the packages and package versions used to build this workflow have been saved via [`renv`](https://rstudio.github.io/renv/articles/renv.html). To download any missing packages and load the correct versions, run the command `renv::restore()` in the console. Doing so will not impact your package versions outside of this R Project. It may take several minutes depending on the number of discrepancies.
+
 ```{r setup, include = TRUE, warning=FALSE, message=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 
@@ -273,7 +277,7 @@ plot_removed_vif(df_wy2_num_preds)
 
 ## Gradient Boosting-Specific Data Preparation: One-Hot Encoding
 
-Most gradient boosting models like the one used in this workflow are unable to directly process categorical variables (there are exceptions, such as `LightGBM` - but for the sake of consistency and compatibility with `caret`, we won't explore that package here). This means that in order for the gradient boosting model to be able to handle categorical variables such as `stratumID`, `clim`, `scen`, and `topo` they must be one-hot encoded. One-hot encoding is a way that 
+Most gradient boosting packages like the one used in this workflow are unable to directly process categorical variables (there are exceptions, such as `LightGBM` - but for the sake of consistency and compatibility with `caret`, we won't explore that package here). This means that in order for the gradient boosting model to be able to handle categorical variables such as `stratumID`, `clim`, `scen`, and `topo` they must be one-hot encoded. One-hot encoding is essentially a means to convert categorical variables to numerical variables by splitting each unique level of the categorical variable into its own column; then, for each observation where the original categorical variable takes on that level the new variable is given a value of 1. All observations that are at different levels of the original variable are given a value of 0.
 
 Additionally, the `gbm` package requires that the response variable is split out from the predictor variables to train the model.
 
