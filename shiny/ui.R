@@ -114,7 +114,8 @@ ui <- fluidPage(
           sidebarPanel(
             ts_data_select,
             ts_num_select,
-            ts_group_select
+            ts_group_select,
+            ts_wy_sel
           ),
           mainPanel(
             br(),

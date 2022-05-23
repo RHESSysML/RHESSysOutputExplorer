@@ -263,6 +263,7 @@ server <- function(input, output) {
   
   ts_plot_data <- reactive({
     ts_data() %>%
+      filter(wy %in% input$ts_wy_sel[1]:input$ts_wy_sel[2]) %>% 
       group_by(wy, across(input$ts_group_select)) %>%
       summarize_if(is.numeric, mean) %>%
       ungroup()

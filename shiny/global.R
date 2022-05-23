@@ -223,7 +223,7 @@ pca_data_select <- selectInput("pca_data_select",
   multiple = FALSE)
 
 pca_group_select <- selectInput("pca_group_select",
-  label = tags$h4("Select your groups (if any)"),
+  label = tags$h4("Select your groups"),
   choices = c(colnames(df_wy)[sapply(df_wy, is.factor)]),
   multiple = FALSE)
 
@@ -249,7 +249,7 @@ dist_data_select <- selectInput("dist_data_select",
 )
 
 dist_group_select <- selectInput("dist_group_select",
-  label = tags$h4("Select your groups (if any)"),
+  label = tags$h4("Select your groups"),
   choices = c(colnames(df_wy)[sapply(df_wy, is.factor)]),
   multiple = FALSE
 )
@@ -270,7 +270,7 @@ ts_data_select <- selectInput("ts_data_select",
 )
 
 ts_group_select <- selectInput("ts_group_select",
-  label = tags$h4("Select your groups (if any)"),
+  label = tags$h4("Select your groups"),
   choices = c(colnames(df_wy)[sapply(df_wy, is.factor)]),
   multiple = FALSE
 )
@@ -281,5 +281,12 @@ ts_num_select <- selectInput("ts_num_select",
   multiple = FALSE
 )
 
-
+ts_wy_sel <- sliderInput("ts_wy_sel",
+  label = tags$h4("Select water year range:"),
+  min = min(df_wy$wy),
+  max = max(df_wy$wy),
+  value = c(min(df_wy$wy), max(df_wy$wy)),
+  sep = "",
+  step = 1
+)
 
