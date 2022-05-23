@@ -223,7 +223,7 @@ server <- function(input, output) {
 
     pca <- stats::prcomp(plot_data, center = TRUE, scale. = TRUE)
 
-    pca.plot <- ggbiplot::ggbiplot(pca,
+    pca.plot <- ggbiplot(pca,
       groups = pca_data()[, input$pca_group_select],
       alpha = input$pca_alpha,
       ellipse = input$pca_ellipse
@@ -262,17 +262,41 @@ server <- function(input, output) {
   })
   
   ts_plot_data <- reactive({
-    ts_data() # %>% 
-      # group_by(!!input$ts_time_select, !!input$ts_group_select) %>% 
-      # summarize_if(is.numeric, mean) %>% 
-      # ungroup()
+    ts_data() %>%
+      group_by(wy, across(input$ts_group_select)) %>%
+      summarize_if(is.numeric, mean) %>%
+      ungroup()
   })
   
-  output$ts_plot <- renderPlot({
-    ggplot(ts_plot_data(), aes(x = ts_plot_data()[, input$ts_time_select], 
-                               y = ts_plot_data()[, input$ts_num_select],
-                               color = ts_plot_data()[, input$ts_group_select])) +
+  output$ts_plot <- renderPlotly({
+    
+    ts_plot_data <- as.data.frame(ts_plot_data())
+    
+    ts_plot <- ggplot(ts_plot_data, aes(
+      x = wy,
+      y = ts_plot_data[, input$ts_num_select],
+      color = ts_plot_data[, input$ts_group_select])
+    ) +
+      labs(x = "Water Year",
+           y = input$ts_num_select,
+           color = input$ts_group_select) +
       theme_light() +
       geom_line()
+    
+    ts_plotly <- ggplotly(ts_plot)
+    
+    text_x <- number(
+      ts_plotly$x$data[[1]]$x,
+      prefix = paste0(full_name_units("wy", metadata, units = FALSE), ": ")
+    )
+    
+    text_y <- number(
+      ts_plotly$x$data[[1]]$y,
+      prefix = paste0(full_name_units(response_var, metadata, units = FALSE), ": "),
+      accuracy = 0.000000001
+    )
+    
+    ts_plotly %>% 
+      style(text = paste0(text_y, "</br></br>", text_x))
   })
 }

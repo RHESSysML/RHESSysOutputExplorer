@@ -281,11 +281,5 @@ ts_num_select <- selectInput("ts_num_select",
   multiple = FALSE
 )
 
-ts_time_select <- selectInput("ts_time_select",
-  label = tags$h4("Select time variable"),
-  choices = c(colnames(df_wy)),
-  selected = "wy",
-  multiple = FALSE
-)
 
 

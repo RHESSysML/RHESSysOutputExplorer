@@ -113,14 +113,13 @@ ui <- fluidPage(
           "Time Series",
           sidebarPanel(
             ts_data_select,
-            ts_time_select,
             ts_num_select,
             ts_group_select
           ),
           mainPanel(
             br(),
             "Time Series Plot",
-            plotOutput(outputId = "ts_plot") %>%
+            plotlyOutput(outputId = "ts_plot") %>%
               withSpinner(type = 6)
           )
         )
