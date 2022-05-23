@@ -25,6 +25,7 @@ library(scales)
 source(here::here("R", "plot_imp.R"))
 source(here::here("R", "plotly_partial_dependence.R"))
 source(here::here("R", "full_name_units.R"))
+source(here::here("R", "df_imp_table.R"))
 
 
 ########## Set working directory ########## 

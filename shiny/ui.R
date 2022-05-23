@@ -31,7 +31,10 @@ ui <- fluidPage(
       tags$h3("Random Forest Variable Importance Output:"),
       tags$p(paste0("Your Response Variable: ", full_name_units(response_var, metadata, units = FALSE))),
       plotOutput(outputId = "imp_plot", height = 550),
-      tags$p(importance_caption)
+      tags$p(importance_caption),
+      br(),
+      tags$h3("Table Comparison"),
+      tableOutput("imp_table")
     ),
     tabPanel(
       "Visualizations",
@@ -88,11 +91,17 @@ ui <- fluidPage(
           ),
           mainPanel(
             br(),
-            "Boxplots and Histograms",
+            "Boxplots",
             plotOutput(outputId = "dist_plot") %>%
               withSpinner(type = 6),
+            br(),
+            "Histograms",
             plotOutput(outputId = "dist_hist") %>%
-              withSpinner(type = 6)
+              withSpinner(type = 6),
+            br(),
+            "Summary",
+            DT::dataTableOutput("dist_table"),
+            br()
           )
         ),
         tabPanel(

@@ -40,6 +40,10 @@ server <- function(input, output) {
   output$imp_plot <- renderPlot({
     plot_imp(imp_wy0) + plot_imp(imp_wy2)
   })
+  
+  output$imp_table <- function() {
+    df_imp_table(imp_wy0, imp_wy2)
+  }
 
   # Visualizations ----------------------------------------------------------
 
@@ -61,7 +65,7 @@ server <- function(input, output) {
       if ("clim" %in% colnames(df_wy)) {
         need(
           length(input$clim_sel) > 0,
-          "Must have atleast one climate scenario selected."
+          "Must have at least one climate scenario selected."
         )
       },
       if ("wy" %in% colnames(df_wy)) {
@@ -253,6 +257,21 @@ server <- function(input, output) {
       theme_light() +
       labs(x = input$dist_num_select) +
       facet_wrap(~ dist_data()[, input$dist_group_select])
+  })
+  
+  output$dist_table <- DT::renderDataTable({
+    dist_data() %>%
+      group_by(across(input$dist_group_select)) %>% 
+      summarise(N. = n(),
+                Min = min(get(input$dist_num_select)),
+                Q1 = quantile(get(input$dist_num_select), 0.25),
+                Median = median(get(input$dist_num_select)),
+                Mean = mean(get(input$dist_num_select)),
+                Q3 = quantile(get(input$dist_num_select), 0.75),
+                Max = max(get(input$dist_num_select))) %>% 
+      mutate(across(where(is.numeric), round, 6)) %>%
+      DT::datatable(options = list(dom = "t")) 
+      
   })
 
   # Time Series Plots -------------------------------------------------------
