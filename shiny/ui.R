@@ -34,35 +34,35 @@ ui <- fluidPage(
       tags$p(importance_caption)
     ),
     tabPanel(
-      "Visualizations",
-      sidebarPanel(
-        if ("stratumID" %in% colnames(df_wy)) {
-          stratum_sel
-        },
-        if ("topo" %in% colnames(df_wy)) {
-          topo_sel
-        },
-        if ("clim" %in% colnames(df_wy)) {
-          clim_sel
-        },
-        if ("wy" %in% colnames(df_wy)) {
-          wy_sel
-        },
-        "Variables to Explore:",
-        independent_variable,
-        facet_variable,
-        quantile_slider
-      ),
-      mainPanel(
-        "Visual Graph of your variable relationships:",
-        plotlyOutput(outputId = "variable_plot", height = 700) %>%
-          withSpinner(type = 6),
-        DT::dataTableOutput("visualization_statistics")
-      )
-    ),
-    tabPanel(
       "Variable Relationships",
       tabBox(width = "100%",
+        tabPanel(
+          "Scatter Plot",
+          sidebarPanel(
+            if ("stratumID" %in% colnames(df_wy)) {
+              stratum_sel
+            },
+            if ("topo" %in% colnames(df_wy)) {
+              topo_sel
+            },
+            if ("clim" %in% colnames(df_wy)) {
+              clim_sel
+            },
+            if ("wy" %in% colnames(df_wy)) {
+              wy_sel
+            },
+            "Variables to Explore:",
+            independent_variable,
+            facet_variable,
+            quantile_slider
+          ),
+          mainPanel(
+            "Scatter Plot",
+            plotlyOutput(outputId = "variable_plot", height = 700) %>%
+              withSpinner(type = 6),
+            DT::dataTableOutput("visualization_statistics")
+          )
+        ),
         tabPanel(
           "Principal Component Analysis",
           sidebarPanel(
