@@ -60,6 +60,7 @@ ui <- fluidPage(
             quantile_slider
           ),
           mainPanel(
+            br(),
             "Scatter Plot",
             plotlyOutput(outputId = "variable_plot", height = 700) %>%
               withSpinner(type = 6),

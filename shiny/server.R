@@ -313,7 +313,7 @@ server <- function(input, output) {
     
     text_y <- number(
       ts_plotly$x$data[[1]]$y,
-      prefix = paste0(full_name_units(response_var, metadata, units = FALSE), ": "),
+      prefix = paste0(full_name_units(input$ts_num_select, metadata, units = FALSE), ": "),
       accuracy = 0.000000001
     )
     
