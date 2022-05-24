@@ -147,18 +147,16 @@ server <- function(input, output) {
     df_wy_reactive() %>%
       dplyr::group_by(clim, quantile) %>%
       dplyr::summarize(
-        "mean.y" = mean(df_wy_reactive()[, response_var]),
-        "min.y" = min(df_wy_reactive()[, response_var]),
-        "max.y" = max(df_wy_reactive()[, response_var]),
-        "mean.x" = mean(!!input$independent_variable),
-        "min.x" = min(!!input$independent_variable),
-        "max.x" = max(!!input$independent_variable)
+        "N" = n(),
+        "Y Range" = max(get(response_var)) - min(get(response_var)),
+        "X Range" = max(get(input$independent_variable)) - min(get(input$independent_variable))
       ) %>%
       dplyr::ungroup() %>%
       dplyr::mutate(dplyr::across(where(is.numeric), round, 6)) %>%
-      DT::datatable(options = list(dom = "t"))
+      DT::datatable()
   })
-
+  
+  
   # Partial Dependence ------------------------------------------------------
 
   # Update select inputs based on the model choice
@@ -272,7 +270,6 @@ server <- function(input, output) {
                 Max = max(get(input$dist_num_select))) %>% 
       mutate(across(where(is.numeric), round, 6)) %>%
       DT::datatable(options = list(dom = "t")) 
-      
   })
 
   # Time Series Plots -------------------------------------------------------
