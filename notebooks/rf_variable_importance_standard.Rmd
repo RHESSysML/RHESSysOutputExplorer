@@ -163,41 +163,25 @@ The next step is intended to elucidate the previous multicollinearity reduction 
 
 
 ```{r summarize_cor_function, class.source='fold-hide'}
-source(here::here("R", "summarize_removed_vars.R"))
-source(here::here("R", "summarize_cor.R"))
-source(here::here("R", "plot_removed_imp.R"))
-source(here::here("R", "plot_removed_vif.R"))
+source(here::here("R", "summarize_var_removal.R"))
+source(here::here("R", "plot_removed_cor.R"))
 ```
 
-
-The following functions output two tables and two plots of all variables indicating selection status and the criteria by which those selections were made. The first table shows preliminary importance and VIF, and the second shows correlation between each variable combination. Preliminary importance and VIF are also plotted visually in the two bar charts. 
+The following functions output summary tables and plots showing variable selection status and the values of VIF, correlation, and importance which led to those selections. 
 
 ### Summary Tables {.tabset}
 
-#### VIF Summary Table
+#### Variable Removal Summary Table
 
-```{r vif_summary_table, warning=FALSE}
-summarize_removed_vars(df_wy_reduced, table = TRUE)
+```{r vif_summary_table_0, warning=FALSE}
+summarize_var_removal(df_wy_num_preds, table = TRUE)
 ```
 
-#### Correlation Summary Table
+#### Cor Summary Plot
 
-```{r cor_summary_table}
-summarize_cor(df_wy_reduced, selected_removed = "removed")
+```{r}
+plot_removed_cor(wy_select_variables, df_wy_num_preds)
 ```
-
-#### Importance Summary Plot
-
-```{r imp_summary_plot, warning=FALSE}
-plot_removed_imp(df_wy_num_preds)
-```
-
-#### VIF Summary Plot
-
-```{r vif_summary_plot, warning=FALSE}
-plot_removed_vif(df_wy_num_preds)
-```
-
 
 # Feature Importance with Random Forest
 
@@ -306,86 +290,23 @@ wy_plot <- plot_imp(imp_wy)
 wy_plot
 ```
 
-## Previewing relationships between important predictors and NPP
-
-The variable importance values derived from our random forest model allow us to investigate interesting relationships and interactions between the response term and important predictors.
-
-
-```{r}
-source(here::here("R", "get_important_predictors.R"))
-
-# assigning first and second most important variables to objects
-pred1 <- get_important_predictors(imp_wy, 1)
-pred2 <- get_important_predictors(imp_wy, 2)
-
-source(here::here("R", "create_binned_df.R"))
-
-df_pred_binned <- create_binned_df(df_wy)
-```
-
-```{r}
-ggplot(df_pred_binned, aes(x = pred1, y = .data[["response"]])) +
-  geom_point() +
-  geom_smooth(method = "lm") +
-  labs(x = str_to_title(pred1), y = response_var,
-       title = paste(pred1, "vs", response_var,
-                     "in 0 degree climate scenario")) +
-  theme_minimal()
-
-source(here::here("R", "create_binned_plot.R"))
-
-create_binned_plot(df_pred_binned)
-```
-
-Variable interactions can be investigated in many ways. The bivariate partial dependence plot below provides a graphical depiction of the marginal effect of two variables on predicted NPP from the random forest model.
-
-```{r}
-bivariate.partialDependence(x = rf_wy$finalModel,
-                            pred.data = df_wy_reduced_allpredictors,
-                            v1 = pred1,
-                            v2 = pred2,
-                            grid.size = 15,
-                            col.ramp = c("orange", "green"),
-                            ncols = 20)
-```
-
-Variable interactions between two predictors and the corresponding NPP predictions from the random forest model can be displayed as a grid of values.
-
-Below, the x-axis represents values of `rz_storage` , y-axis represents values of `precip` , and the cell colors/values represent predicted values of `npp` , with red indicating high and blue indicating low. For this interaction, we can see that high values of precipitation and root-zone storage result in higher predictions of NPP. This is only true for root zone storage given high precipitation, while high precipitation at all levels of root zone storage predicts relatively higher NPP. This is another indicator that it is an important predictor.
-
-```{r}
-# plot_predict_interaction(rf_wy$finalModel, df_wy_reduced,
-#                          "rz_storage", "precip",
-#                          grid = 50) # smaller grid values reveal more general relationships
-```
 
 ## Comparison with other measures of importance
 
-The capstone team chose to use permutation importance above as our main representation of importance. However there are other potential methods of determining relative importance from random forest models that are demonstrated below. Note that the interpretation of these measures, as discussed in the original justification of using permutation importance, is limited due to characteristics of RHESSys data. Namely, the presence of both categorical and continuous variables, differing number of classes in categorical variables, differing scales of numeric variables, and potential remaining multicollinearity all have greater potential to skew the results of the methods below.
+While permutation importance was chosen as the primary measure of importance in this workflow, there are other measures that random forests allow for which may be of utility. Although, it's important that the inherent biases previously mentioned (Strobl et al. 2007) are understood. These additional measures will not be described further here, but the function below, `randomForestExplainer::explain_forest()`, is an excellent tool which creates an html document summarizing and comparing a number of them.
 
-The plot below presents the top 10 variables using % mean decrease in accuracy (%IncMSE) and mean decrease in node impurity (IncNodePurity). %IncMSE is computed from permuting the out-of-bag data, while IncNodePurity is the mean total decrease in node impurities from splitting on the given variable, as measured by the residual sum of squares.
+To run the explainer, just set the `run_explainer` object below to `TRUE`. It will likely take several minutes to run. The document is set to output to the "docs" folder in the project's root directory, and will be best viewed in your browser.
 
-```{r}
-varImpPlot(rf_wy$finalModel, n.var = 10, main = "Comparing variable importance measures")
-```
-
-The plot below visualizes the distribution of minimum depth from the random forest model. Low values, such as for precipitation below, indicate that many observations are divided into groups based on that variable.
+*Note: the measure of "mse_increase" found in the output document is synonymous with "permutation importance" used in the workflow.*
 
 ```{r}
-min_depth_frame <- min_depth_distribution(rf_wy$finalModel)
+# Set to false by default due to long run time
+run_explainer <- FALSE
 
-plot_min_depth_distribution(min_depth_frame,
-                            mean_sample = "relevant_trees")
-```
-
-Lastly, SHapley Additive exPlanations (SHAP) values interpret the marginal contributions of individual features. This allows visualization of the direction of the relationships between predictors and the response variable.
-
-```{r}
-explain <- explain(object = rf_wy$finalModel,
-                    X = subset(df_wy_reduced, select = -response),
-                    pred_wrapper = predict)
-
-autoplot(explain, type = "contribution", feature = "response")
+if (run_explainer == TRUE) {
+  library(randomForestExplainer)
+  randomForestExplainer::explain_forest(rf_wy0, path = here::here("docs", "forest_explained.html"))
+}
 ```
 
 
