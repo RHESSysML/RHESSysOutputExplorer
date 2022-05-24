@@ -18,7 +18,8 @@ df_imp_table <- function(imp_wy_df1, imp_wy_df2) {
   df_imp %>%
     kable(align = "r",
           caption = "Difference in variable importance for the two climate scenarios") %>%
-    kable_styling(bootstrap_options = c("striped", "hover")) %>%
+    kable_styling(bootstrap_options = c("striped", "hover"),
+                  full_width=F) %>%
     column_spec(column = 4,
                 color = ifelse(is.na(df_imp$Diff), "grey",
                                ifelse(df_imp$Diff > 0, "green",

@@ -40,6 +40,10 @@ server <- function(input, output) {
   output$imp_plot <- renderPlot({
     plot_imp(imp_wy0) + plot_imp(imp_wy2)
   })
+  
+  output$imp_table <- function() {
+    df_imp_table(imp_wy0, imp_wy2)
+  }
 
   # Visualizations ----------------------------------------------------------
 
@@ -61,7 +65,7 @@ server <- function(input, output) {
       if ("clim" %in% colnames(df_wy)) {
         need(
           length(input$clim_sel) > 0,
-          "Must have atleast one climate scenario selected."
+          "Must have at least one climate scenario selected."
         )
       },
       if ("wy" %in% colnames(df_wy)) {
@@ -223,7 +227,7 @@ server <- function(input, output) {
 
     pca <- stats::prcomp(plot_data, center = TRUE, scale. = TRUE)
 
-    pca.plot <- ggbiplot::ggbiplot(pca,
+    pca.plot <- ggbiplot(pca,
       groups = pca_data()[, input$pca_group_select],
       alpha = input$pca_alpha,
       ellipse = input$pca_ellipse
@@ -255,6 +259,21 @@ server <- function(input, output) {
            y = "Count") +
       facet_wrap(~ dist_data()[, input$dist_group_select])
   })
+  
+  output$dist_table <- DT::renderDataTable({
+    dist_data() %>%
+      group_by(across(input$dist_group_select)) %>% 
+      summarise(N. = n(),
+                Min = min(get(input$dist_num_select)),
+                Q1 = quantile(get(input$dist_num_select), 0.25),
+                Median = median(get(input$dist_num_select)),
+                Mean = mean(get(input$dist_num_select)),
+                Q3 = quantile(get(input$dist_num_select), 0.75),
+                Max = max(get(input$dist_num_select))) %>% 
+      mutate(across(where(is.numeric), round, 6)) %>%
+      DT::datatable(options = list(dom = "t")) 
+      
+  })
 
   # Time Series Plots -------------------------------------------------------
 
@@ -263,17 +282,42 @@ server <- function(input, output) {
   })
   
   ts_plot_data <- reactive({
-    ts_data() # %>% 
-      # group_by(!!input$ts_time_select, !!input$ts_group_select) %>% 
-      # summarize_if(is.numeric, mean) %>% 
-      # ungroup()
+    ts_data() %>%
+      filter(wy %in% input$ts_wy_sel[1]:input$ts_wy_sel[2]) %>% 
+      group_by(wy, across(input$ts_group_select)) %>%
+      summarize_if(is.numeric, mean) %>%
+      ungroup()
   })
   
-  output$ts_plot <- renderPlot({
-    ggplot(ts_plot_data(), aes(x = ts_plot_data()[, input$ts_time_select], 
-                               y = ts_plot_data()[, input$ts_num_select],
-                               color = ts_plot_data()[, input$ts_group_select])) +
+  output$ts_plot <- renderPlotly({
+    
+    ts_plot_data <- as.data.frame(ts_plot_data())
+    
+    ts_plot <- ggplot(ts_plot_data, aes(
+      x = wy,
+      y = ts_plot_data[, input$ts_num_select],
+      color = ts_plot_data[, input$ts_group_select])
+    ) +
+      labs(x = "Water Year",
+           y = input$ts_num_select,
+           color = input$ts_group_select) +
       theme_light() +
       geom_line()
+    
+    ts_plotly <- ggplotly(ts_plot)
+    
+    text_x <- number(
+      ts_plotly$x$data[[1]]$x,
+      prefix = paste0(full_name_units("wy", metadata, units = FALSE), ": ")
+    )
+    
+    text_y <- number(
+      ts_plotly$x$data[[1]]$y,
+      prefix = paste0(full_name_units(response_var, metadata, units = FALSE), ": "),
+      accuracy = 0.000000001
+    )
+    
+    ts_plotly %>% 
+      style(text = paste0(text_y, "</br></br>", text_x))
   })
 }
