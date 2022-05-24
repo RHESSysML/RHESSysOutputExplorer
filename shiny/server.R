@@ -296,8 +296,8 @@ server <- function(input, output) {
       color = ts_plot_data[, input$ts_group_select])
     ) +
       labs(x = "Water Year",
-           y = input$ts_num_select,
-           color = input$ts_group_select) +
+           y = full_name_units(input$ts_num_select, metadata),
+           color = full_name_units(input$ts_group_select, metadata, units = FALSE)) +
       theme_light() +
       geom_line()
     
