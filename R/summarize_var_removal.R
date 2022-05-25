@@ -15,15 +15,11 @@ summarize_var_removal <- function(input_df, clim = NULL, table = TRUE, plot_prep
   } 
   else {
     df_name <- deparse(substitute(input_df))
+    clim_id <- paste0("clim", clim)
+    select_variables <- get(paste0(clim_id, "_select_variables"))
+    imp <- get(paste0("imp", clim))
+    df <- get(paste0("df_clim", clim))
   }
-  df_id <- str_extract(df_name, pattern = "clim\\d?")
-  clim <- gsub("\\D", "", df_name)
-  
-  select_variables <- get(paste0(df_id, "_select_variables"))
-  imp <- get(paste0("imp", clim))
-  df <- get(paste0("df_clim", clim))
-  all_preds.df <- df %>% 
-    select(!response)
   
   
   removed_importance <- imp$finalModel["importance"] %>% 
