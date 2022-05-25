@@ -8,20 +8,20 @@
 #' @return dataframe or datatable containing the following values for all predictor variables: removed/selected status, importance rank, and VIF
 #' @export
 #'
-summarize_var_removal <- function(input_df, table = FALSE, plot_prep = FALSE) {
+summarize_var_removal <- function(input_df, clim = NULL, table = TRUE, plot_prep = FALSE) {
   
-  if (plot_prep == TRUE) {
+  if (is.null(clim) == TRUE) {
     df_name <- as.character(input_df)
   } 
   else {
     df_name <- deparse(substitute(input_df))
   }
-  df_id <- str_extract(df_name, pattern = "wy\\d?")
+  df_id <- str_extract(df_name, pattern = "clim\\d?")
   clim <- gsub("\\D", "", df_name)
   
   select_variables <- get(paste0(df_id, "_select_variables"))
   imp <- get(paste0("imp", clim))
-  df <- get(paste0("df_wy", clim))
+  df <- get(paste0("df_clim", clim))
   all_preds.df <- df %>% 
     select(!response)
   
@@ -37,7 +37,7 @@ summarize_var_removal <- function(input_df, table = FALSE, plot_prep = FALSE) {
   
   # Calculating vif again - auto_vif() only returns values for selected variables
   # First removing perfectly collinear variables (aliases) which break vif()
-  df_num <- df_wy %>% 
+  df_num <- df %>% 
     select(where(is.numeric))
   model <- lm(response ~ ., df_num)
   aliases <- attributes(alias(model)$Complete)$dimnames[[1]]
