@@ -140,13 +140,11 @@ cor.threshold = 0.8
 source(here::here("R", "remove_vif.R"))
 source(here::here("R", "remove_cor.R"))
 
-# Removing columns with no variance
+# Removing variables with 0 variance
 no_var <- sapply(df_wy_num_preds, function(col) var(col) == 0)
 df_wy_num_preds <- df_wy_num_preds[, !no_var]
 
-# Create list of selected variables
-# wy_vif <- remove_vif(df_wy_num_preds, vif.threshold = vif.threshold, pref_order)$selected.variables
-
+# Identifying variables with correlations or VIF above given thresholds
 vif_cor <- remove_cor(df_wy_num_preds, cor.threshold = cor.threshold, pref_order) %>% 
   remove_vif(vif.threshold = vif.threshold, pref_order)
 
@@ -254,7 +252,6 @@ imp_wy <- varImp(rf_wy$finalModel, scale = FALSE) %>%
 ```
 
 Save the above importance dataframes to be used in the Shiny App.
-
 ```{r}
 # This will export the importance rank datasets as csv files to be used in the shiny app. However, once again we will leave this commented out so that it doesn't export new csv files every time the workflow runs.
 
