@@ -292,7 +292,7 @@ wy_plot
 
 ## Shiny App
 
-The capstone team created a suite of interactive visualization tools using the `Shiny` package. It can be used to further explore the original data set and the variable importance results from the workflow. The app can be launched below by setting `run_app` below to `TRUE`.
+The capstone team created an application with a suite of interactive visualization tools using the `Shiny` package. It can be used to further explore the original data set and the variable importance results from the workflow. The app can be launched below by setting `run_app` below to `TRUE`.
 
 ```{r}
 run_app <- FALSE
