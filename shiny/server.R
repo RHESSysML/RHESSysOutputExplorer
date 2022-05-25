@@ -176,8 +176,8 @@ server <- function(input, output) {
         "Facet Range" = paste0("(", round(min(get(input$facet_variable)), 4), ", ", 
                                round(max(get(input$facet_variable)), 4), ")")
       ) %>%
-      rename("Quantile" = quantile) %>% 
-      DT::datatable(options = list(dom = "t"))
+      select(-quantile) %>% 
+      DT::datatable(rownames = FALSE, options = list(dom = "t"))
   })
 
 
