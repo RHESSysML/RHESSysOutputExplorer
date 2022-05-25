@@ -320,17 +320,6 @@ if (run_explainer == TRUE) {
 }
 ```
 
-*Note: the measure of "mse_increase" found in the output document is synonymous with "permutation importance" used in the workflow.*
-
-```{r}
-# Set to false by default due to long run time
-run_explainer <- FALSE
-
-if (run_explainer == TRUE) {
-  randomForestExplainer::explain_forest(rf_wy0, path = here::here("docs", "forest_explained.html"))
-}
-```
-
 
 
 # References
