@@ -40,7 +40,7 @@ server <- function(input, output) {
   output$imp_plot <- renderPlot({
     plot_imp(imp_wy0) + plot_imp(imp_wy2)
   })
-  
+
   output$imp_table <- function() {
     df_imp_table(imp_wy0, imp_wy2)
   }
@@ -90,11 +90,11 @@ server <- function(input, output) {
     if ("clim" %in% colnames(df_wy)) {
       reactive_df <- reactive_df %>% dplyr::filter(clim %in% input$clim_sel)
     }
-    
+
     if ("wy" %in% colnames(df_wy)) {
       reactive_df <- reactive_df %>% dplyr::filter(wy %in% input$wy_sel[1]:input$wy_sel[2])
     }
-    
+
     return(reactive_df)
   })
 
@@ -127,36 +127,49 @@ server <- function(input, output) {
       theme(text = element_text(size = 10))
 
     plotly_p <- ggplotly(p)
-    
+
     text_x <- number(
       plotly_p$x$data[[1]]$x,
       prefix = paste0(full_name_units(input$independent_variable, metadata, units = FALSE), ": ")
     )
-    
+
     text_y <- number(
       plotly_p$x$data[[1]]$y,
       prefix = paste0(full_name_units(response_var, metadata, units = FALSE), ": "),
       accuracy = 0.000000001
     )
-    
-    plotly_p %>% 
+
+    plotly_p %>%
       style(text = paste0(text_y, "</br></br>", text_x))
   })
 
+  ### Helper function for linear regression line in reactive table below ###
+  mdl <- function(df) {
+    formula <- as.formula(paste(response_var, input$independent_variable, sep = "~"))
+    lm(formula = formula, data = df)
+  }
+
   output$visualization_statistics <- DT::renderDataTable({
     df_wy_reactive() %>%
-      dplyr::group_by(clim, quantile) %>%
-      dplyr::summarize(
-        "N" = n(),
-        "Y Range" = max(get(response_var)) - min(get(response_var)),
-        "X Range" = max(get(input$independent_variable)) - min(get(input$independent_variable))
-      ) %>%
-      dplyr::ungroup() %>%
+      select(quantile, response_var, input$independent_variable) %>%
+      dplyr::group_by(quantile) %>%
+      nest() %>%
+      mutate(m = map(data, mdl)) %>%
+      mutate(stats = map(m, tidy)) %>%
+      mutate(r2 = map(m, glance)) %>%
+      ungroup() %>%
+      unnest(stats) %>%
+      filter(term != "(Intercept)") %>%
+      select(-c(statistic, p.value)) %>%
+      unnest(r2) %>%
+      select(quantile, estimate, r.squared, adj.r.squared) %>%
       dplyr::mutate(dplyr::across(where(is.numeric), round, 6)) %>%
-      DT::datatable()
+      dplyr::arrange(quantile) %>%
+      dplyr::rename("Quantile" = quantile, "Slope" = estimate, "R.squared" = r.squared, "R.squared (adj)" = adj.r.squared) %>% 
+      DT::datatable(options = list(dom = "t"))
   })
-  
-  
+
+
   # Partial Dependence ------------------------------------------------------
 
   # Update select inputs based on the model choice
@@ -253,23 +266,27 @@ server <- function(input, output) {
     ggplot(dist_data(), aes(x = dist_data()[, input$dist_num_select])) +
       geom_histogram() +
       theme_light() +
-      labs(x = full_name_units(input$dist_num_select, metadata),
-           y = "Count") +
+      labs(
+        x = full_name_units(input$dist_num_select, metadata),
+        y = "Count"
+      ) +
       facet_wrap(~ dist_data()[, input$dist_group_select])
   })
-  
+
   output$dist_table <- DT::renderDataTable({
     dist_data() %>%
-      group_by(across(input$dist_group_select)) %>% 
-      summarise(N. = n(),
-                Min = min(get(input$dist_num_select)),
-                Q1 = quantile(get(input$dist_num_select), 0.25),
-                Median = median(get(input$dist_num_select)),
-                Mean = mean(get(input$dist_num_select)),
-                Q3 = quantile(get(input$dist_num_select), 0.75),
-                Max = max(get(input$dist_num_select))) %>% 
+      group_by(across(input$dist_group_select)) %>%
+      summarise(
+        N. = n(),
+        Min = min(get(input$dist_num_select)),
+        Q1 = quantile(get(input$dist_num_select), 0.25),
+        Median = median(get(input$dist_num_select)),
+        Mean = mean(get(input$dist_num_select)),
+        Q3 = quantile(get(input$dist_num_select), 0.75),
+        Max = max(get(input$dist_num_select))
+      ) %>%
       mutate(across(where(is.numeric), round, 6)) %>%
-      DT::datatable(options = list(dom = "t")) 
+      DT::datatable(options = list(dom = "t"))
   })
 
   # Time Series Plots -------------------------------------------------------
@@ -277,44 +294,45 @@ server <- function(input, output) {
   ts_data <- reactive({
     ts_data <- get(input$ts_data_select)
   })
-  
+
   ts_plot_data <- reactive({
     ts_data() %>%
-      filter(wy %in% input$ts_wy_sel[1]:input$ts_wy_sel[2]) %>% 
+      filter(wy %in% input$ts_wy_sel[1]:input$ts_wy_sel[2]) %>%
       group_by(wy, across(input$ts_group_select)) %>%
       summarize_if(is.numeric, mean) %>%
       ungroup()
   })
-  
+
   output$ts_plot <- renderPlotly({
-    
     ts_plot_data <- as.data.frame(ts_plot_data())
-    
+
     ts_plot <- ggplot(ts_plot_data, aes(
       x = wy,
       y = ts_plot_data[, input$ts_num_select],
-      color = ts_plot_data[, input$ts_group_select])
-    ) +
-      labs(x = "Water Year",
-           y = input$ts_num_select,
-           color = input$ts_group_select) +
+      color = ts_plot_data[, input$ts_group_select]
+    )) +
+      labs(
+        x = "Water Year",
+        y = input$ts_num_select,
+        color = input$ts_group_select
+      ) +
       theme_light() +
       geom_line()
-    
+
     ts_plotly <- ggplotly(ts_plot)
-    
+
     text_x <- number(
       ts_plotly$x$data[[1]]$x,
       prefix = paste0(full_name_units("wy", metadata, units = FALSE), ": ")
     )
-    
+
     text_y <- number(
       ts_plotly$x$data[[1]]$y,
       prefix = paste0(full_name_units(input$ts_num_select, metadata, units = FALSE), ": "),
       accuracy = 0.000000001
     )
-    
-    ts_plotly %>% 
+
+    ts_plotly %>%
       style(text = paste0(text_y, "</br></br>", text_x))
   })
 }

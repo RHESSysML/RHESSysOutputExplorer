@@ -19,6 +19,8 @@ library(DT)
 library(plotly)
 library(randomForest)
 library(scales)
+library(broom)
+library(purrr)
 
 
 ######### Source functions ########## 
