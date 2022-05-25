@@ -165,7 +165,18 @@ server <- function(input, output) {
       select(quantile, estimate, r.squared, adj.r.squared) %>%
       dplyr::mutate(dplyr::across(where(is.numeric), round, 6)) %>%
       dplyr::arrange(quantile) %>%
-      dplyr::rename("Quantile" = quantile, "Slope" = estimate, "R.squared" = r.squared, "R.squared (adj)" = adj.r.squared) %>% 
+      dplyr::rename("Quantile" = quantile, "Slope" = estimate, "R.squared" = r.squared, "R.squared (adj)" = adj.r.squared) %>%
+      DT::datatable(options = list(dom = "t"))
+  })
+
+  output$facet_stats <- DT::renderDataTable({
+    df_wy_reactive() %>%
+      group_by(quantile) %>%
+      summarize(
+        "Facet Range" = paste0("(", round(min(get(input$facet_variable)), 4), ", ", 
+                               round(max(get(input$facet_variable)), 4), ")")
+      ) %>%
+      rename("Quantile" = quantile) %>% 
       DT::datatable(options = list(dom = "t"))
   })
 

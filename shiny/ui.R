@@ -64,7 +64,8 @@ ui <- fluidPage(
             "Scatter Plot",
             plotlyOutput(outputId = "variable_plot", height = 700) %>%
               withSpinner(type = 6),
-            div(DT::dataTableOutput("visualization_statistics"), style = "margin: auto; width: 50%")
+            div(DT::dataTableOutput("visualization_statistics"), style = "margin: auto; width: 50%"),
+            div(DT::dataTableOutput("facet_stats"), style = "margin: auto; width: 50%")
           )
         ),
         tabPanel(
