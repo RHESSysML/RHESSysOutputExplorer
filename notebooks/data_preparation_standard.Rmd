@@ -18,7 +18,7 @@ library(RHESSysIOinR)
 ## Load Data
 
 ```{r load_data, message = FALSE}
-df <- readRDS(here::here("data", "chapSUpar17_basin.RDS")) 
+df_raw <- readRDS(here::here("data", "chapSUpar17_basin.RDS")) 
 ```
 
 ## Clean and Aggregate Data
@@ -43,7 +43,7 @@ The `response_var` object is the response variable that the user wants to predic
 
 ```{r}
 # Adding water year
-df <- add_dates(df) %>% 
+df_raw <- add_dates(df_raw) %>% 
   select(-yd)
 ```
 
@@ -68,7 +68,7 @@ if (class(response_var) != "character") {
 
 # Check for factors with many categories
 for (column in factor_vars) {
-  num_categories = n_distinct(df[,column])
+  num_categories = n_distinct(df_raw[,column])
   if (num_categories > 50) {
     warning(paste(column, "has", num_categories, "categories, should this column be numeric?"))
   }
@@ -118,7 +118,7 @@ Here is where the categorical variables from the `factor_vars` object (explained
 
 ```{r convert_to_factors}
 # Convert categorical variables to factors
-df[,factor_vars] <- lapply(df[,factor_vars], factor)
+df_raw[,factor_vars] <- lapply(df_raw[,factor_vars], factor)
 
 ```
 
@@ -126,7 +126,7 @@ Next, for our example, there were some changes that needed to be made that may o
 
 ```{r prepare_data}
 # Group by chosen columns
-df <- df %>%   
+df <- df_raw %>%   
   group_by(across(all_of(group_cols)))
 
 # Aggregate average temperatures using the aggregate_temp() function defined above.

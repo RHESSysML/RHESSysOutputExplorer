@@ -116,7 +116,7 @@ Below, there are two methods for setting preference order: (1) Manually creating
 # First climate scenario
 
 # Find preliminary importance using random forest
-imp <- train(x = df %>% select(!response),
+prelim_imp <- train(x = df %>% select(!response),
               y = df$response,
               method = 'rf',
               importance = TRUE,
@@ -124,7 +124,7 @@ imp <- train(x = df %>% select(!response),
               trControl = trainControl(method = "none", seed = 4326))
 
 # Set preference order based on variable importance
-pref_order <- varImp(imp$finalModel, scale = FALSE) %>% 
+pref_order <- varImp(prelim_imp$finalModel, scale = FALSE) %>% 
   arrange(-Overall) %>% 
   rownames()
 ```
@@ -246,7 +246,7 @@ As the primary measure of importance we instead use partial permutation importan
 4. Importance of the permuted variable is deemed to be the mean loss in accuracy when its values were permuted.
 
 ```{r variable_importance}
-imp_wy <- varImp(rf$finalModel, scale = FALSE) %>% 
+imp <- varImp(rf$finalModel, scale = FALSE) %>% 
   rownames_to_column("Variable") %>% 
   mutate(Rank = rank(-Overall))
 ```
@@ -255,7 +255,7 @@ Save the above importance dataframes to be used in the Shiny App.
 ```{r}
 # This will export the importance rank datasets as csv files to be used in the shiny app. However, once again we will leave this commented out so that it doesn't export new csv files every time the workflow runs.
 
-# saveRDS(imp_wy0, file = here("shiny", "aggregated_datasets", "imp_wy0.RDS"))
+# saveRDS(imp0, file = here("shiny", "aggregated_datasets", "imp0.RDS"))
 ```
 
 
@@ -283,7 +283,7 @@ Variable importance plots display relative magnitude of importance between varia
 ```{r plot_imp}
 source(here::here("R", "plot_imp.R"))
 
-plot <- plot_imp(imp_wy)
+plot <- plot_imp(imp)
 plot
 ```
 
