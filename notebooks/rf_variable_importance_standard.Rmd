@@ -70,7 +70,7 @@ Here, we display summary statistics for the base climate scenario data.
 ```{r describe_data}
 source(here::here("R", "summarize_data.R"))
 
-summarize_data(df_wy)
+summarize_data(df)
 ```
 
 
@@ -92,10 +92,10 @@ First, we create data frames containing only the predictor variables to assist w
 
 ```{r get_predictors}
 # Save data frames of predictor variables for first climate scenario
-df_wy_num_preds <- df_wy %>% 
+df_num_preds <- df %>% 
   select(!response & where(is.numeric))
 
-df_wy_fpreds <- df_wy %>% 
+df_fpreds <- df %>% 
   select(!response & where(is.factor)) %>% 
   colnames()
 ```
@@ -116,8 +116,8 @@ Below, there are two methods for setting preference order: (1) Manually creating
 # First climate scenario
 
 # Find preliminary importance using random forest
-imp <- train(x = df_wy %>% select(!response),
-              y = df_wy$response,
+imp <- train(x = df %>% select(!response),
+              y = df$response,
               method = 'rf',
               importance = TRUE,
               replace = TRUE,
@@ -141,18 +141,18 @@ source(here::here("R", "remove_vif.R"))
 source(here::here("R", "remove_cor.R"))
 
 # Removing variables with 0 variance
-no_var <- sapply(df_wy_num_preds, function(col) var(col) == 0)
-df_wy_num_preds <- df_wy_num_preds[, !no_var]
+no_var <- sapply(df_num_preds, function(col) var(col) == 0)
+df_num_preds <- df_num_preds[, !no_var]
 
 # Identifying variables with correlations or VIF above given thresholds
-vif_cor <- remove_cor(df_wy_num_preds, cor.threshold = cor.threshold, pref_order) %>% 
+vif_cor <- remove_cor(df_num_preds, cor.threshold = cor.threshold, pref_order) %>% 
   remove_vif(vif.threshold = vif.threshold, pref_order)
 
-wy_select_variables <- vif_cor$selected.variables
+select_variables <- vif_cor$selected.variables
 
 # Remove numeric variables with multicollinearity
-df_wy_reduced <- df_wy %>% 
-  select(c(response, all_of(df_wy_fpreds), all_of(wy_select_variables)))
+df_reduced <- df %>% 
+  select(c(response, all_of(df_fpreds), all_of(select_variables)))
 ```
 
 ## Summary of Removed Variables
@@ -172,13 +172,13 @@ The following functions output summary tables and plots showing variable selecti
 #### Variable Removal Summary Table
 
 ```{r vif_summary_table_0, warning=FALSE}
-summarize_var_removal(df_wy_num_preds, table = TRUE)
+summarize_var_removal(df_num_preds, table = TRUE)
 ```
 
 #### Cor Summary Plot
 
 ```{r}
-plot_removed_cor(wy_select_variables, df_wy_num_preds)
+plot_removed_cor(select_variables, df_num_preds)
 ```
 
 # Feature Importance with Random Forest
@@ -194,17 +194,17 @@ The `mtry` parameter determines the number of variables randomly sampled as cand
 The function below creates a vector of accuracy results of random forests using different values for `mtry`.
 
 ```{r tuning_function}
-df_wy_reduced <- as.data.frame(df_wy_reduced)
+df_reduced <- as.data.frame(df_reduced)
 ```
 
 Next, we run the function for both climate scenario data sets and visualize the results. Model error here is assessed using out-of-bag (OOB) observations in the data, which refers to observations that were not sampled during bootstrapping for the particular Random Forest being assessed. In other words OOB data were not used to train the model and can be used to test accuracy without the risk of bias incurred from model over-fitting. The best `mtry value` in the plots below will be represented by the lowest `OOB Error`.
 
-```{r tune_rf_wy, warning = FALSE}
+```{r tune_rf, warning = FALSE}
 source(here::here("R", "tune_rf_model.R"))
 
 set.seed(4326)
 
-mtry <- tune_rf_model(df_wy_reduced)
+mtry <- tune_rf_model(df_reduced)
 bestmtry <- match(min(mtry), mtry)
 ggplot(data = as.data.frame(mtry), aes(x = 1:length(mtry), y = mtry)) +
   geom_vline(xintercept = bestmtry, linetype = "dashed") +
@@ -213,7 +213,7 @@ ggplot(data = as.data.frame(mtry), aes(x = 1:length(mtry), y = mtry)) +
   theme_light() +
   labs(x = "mtry value",
        y = "OOB Error",
-       title = paste0("The best mtry value for ", deparse(substitute(df_wy_reduced)), " is ", bestmtry))
+       title = paste0("The best mtry value for ", deparse(substitute(df_reduced)), " is ", bestmtry))
 ```
 
 The best `mtry` value for each data set is used for the respective random forest model below.
@@ -221,8 +221,8 @@ The best `mtry` value for each data set is used for the respective random forest
 ### Random Forest Models
 
 ```{r get_random_forests}
-rf_wy <- train(x = df_wy_reduced %>% select(!response),
-                y = df_wy_reduced$response,
+rf <- train(x = df_reduced %>% select(!response),
+                y = df_reduced$response,
                 method = 'rf',
                 .mtry = bestmtry,
                 ntree = 500,
@@ -246,7 +246,7 @@ As the primary measure of importance we instead use partial permutation importan
 4. Importance of the permuted variable is deemed to be the mean loss in accuracy when its values were permuted.
 
 ```{r variable_importance}
-imp_wy <- varImp(rf_wy$finalModel, scale = FALSE) %>% 
+imp_wy <- varImp(rf$finalModel, scale = FALSE) %>% 
   rownames_to_column("Variable") %>% 
   mutate(Rank = rank(-Overall))
 ```
@@ -266,12 +266,12 @@ The following section provides visualizations and statistics to evaluate the ran
 First, simply calling the random forest shows a summary of the results, including percent variance explained.
 
 ```{r}
-rf_wy_fit <- round(tail(rf_wy$finalModel$rsq, 1)*100, 2)
+rf_fit <- round(tail(rf$finalModel$rsq, 1)*100, 2)
 
-rf_wy$finalModel
+rf$finalModel
 ```
 
-The model for the base climate scenario explained `r rf_wy0_fit`% of variance in NPP.
+The model for the base climate scenario explained `r rf0_fit`% of variance in NPP.
 
 
 # Visualize Results
@@ -283,8 +283,8 @@ Variable importance plots display relative magnitude of importance between varia
 ```{r plot_imp}
 source(here::here("R", "plot_imp.R"))
 
-wy_plot <- plot_imp(imp_wy)
-wy_plot
+plot <- plot_imp(imp_wy)
+plot
 ```
 
 
@@ -316,7 +316,7 @@ To run the explainer, just set the `run_explainer` object below to `TRUE`. It wi
 run_explainer <- FALSE
 
 if (run_explainer == TRUE) {
-  randomForestExplainer::explain_forest(rf_wy0, path = here::here("docs", "forest_explained.html"))
+  randomForestExplainer::explain_forest(rf0, path = here::here("docs", "forest_explained.html"))
 }
 ```
 

@@ -70,7 +70,7 @@ Here, we display summary statistics for the base climate scenario data.
 ```{r describe_data}
 source(here::here("R", "summarize_data.R"))
 
-summarize_data(df_wy)
+summarize_data(df)
 ```
 
 
@@ -92,10 +92,10 @@ First, we create data frames containing only the predictor variables to assist w
 
 ```{r get_predictors}
 # Save data frames of predictor variables
-df_wy_num_preds <- df_wy %>% 
+df_num_preds <- df %>% 
   select(!response & where(is.numeric))
 
-df_wy_fpreds <- df_wy %>% 
+df_fpreds <- df %>% 
   select(!response & where(is.factor)) %>% 
   colnames()
 ```
@@ -116,8 +116,8 @@ Below, there are two methods for setting preference order: (1) Manually creating
 ```{r auto_preference_order, warning=FALSE}
 
 # Find preliminary importance using random forest
-imp <- train(x = df_wy %>% select(!response),
-              y = df_wy$response,
+imp <- train(x = df %>% select(!response),
+              y = df$response,
               method = 'rf',
               importance = TRUE,
               replace = TRUE,
@@ -141,13 +141,13 @@ source(here::here("R", "remove_vif.R"))
 source(here::here("R", "remove_cor.R"))
 
 # Create list of selected variables
-wy_vif <- remove_vif(df_wy_num_preds, vif.threshold = vif.threshold, pref_order)$selected.variables
-wy_cor <- remove_cor(df_wy_num_preds, cor.threshold = cor.threshold, pref_order)$selected.variables
-wy_select_variables <- unique(append(wy_vif, wy_cor))
+vif <- remove_vif(df_num_preds, vif.threshold = vif.threshold, pref_order)$selected.variables
+cor <- remove_cor(df_num_preds, cor.threshold = cor.threshold, pref_order)$selected.variables
+select_variables <- unique(append(vif, cor))
 
 # Remove numeric variables with multicollinearity
-df_wy_reduced <- df_wy %>% 
-  select(c(response, all_of(df_wy_fpreds), all_of(wy_select_variables)))
+df_reduced <- df %>% 
+  select(c(response, all_of(df_fpreds), all_of(select_variables)))
 
 ```
 
@@ -169,25 +169,25 @@ The following functions output two tables and two plots of all variables indicat
 #### VIF Summary Table
 
 ```{r vif_summary_table, warning=FALSE}
-summarize_removed_vars(df_wy_reduced, table = TRUE)
+summarize_removed_vars(df_reduced, table = TRUE)
 ```
 
 #### Correlation Summary Table
 
 ```{r cor_summary_table}
-summarize_cor(df_wy_reduced, selected_removed = "removed")
+summarize_cor(df_reduced, selected_removed = "removed")
 ```
 
 #### Importance Summary Plot
 
 ```{r imp_summary_plot, warning=FALSE}
-plot_removed_imp(df_wy_num_preds)
+plot_removed_imp(df_num_preds)
 ```
 
 #### VIF Summary Plot
 
 ```{r vif_summary_plot, warning=FALSE}
-plot_removed_vif(df_wy_num_preds)
+plot_removed_vif(df_num_preds)
 ```
 
 
@@ -201,12 +201,12 @@ Additionally, the `gbm` package requires that the response variable is split out
 
 ```{r}
 # Predictor vs response variables
-y = df_wy$response
-x = df_wy[-1]
+y = df$response
+x = df[-1]
 
 # One-hot encoding
-x[,df_wy_fpreds] <- lapply(x[,df_wy_fpreds], factor)
-xhot = x %>% data.table::data.table() %>% mltools::one_hot(cols = df_wy_fpreds)
+x[,df_fpreds] <- lapply(x[,df_fpreds], factor)
+xhot = x %>% data.table::data.table() %>% mltools::one_hot(cols = df_fpreds)
 ```
 
 
@@ -294,9 +294,9 @@ As the primary measure of importance we instead use partial permutation importan
 ```{r}
 
 gbm_imp = varImp(gbm_model_cv_best, scale = FALSE)
-imp_wy_gb = gbm_imp$importance
-imp_wy_gb = imp_wy_gb %>% mutate(Variable = row.names(imp_wy_gb)) %>% 
-  filter(imp_wy_gb$Overall != 0)
+imp_gb = gbm_imp$importance
+imp_gb = imp_gb %>% mutate(Variable = row.names(imp_gb)) %>% 
+  filter(imp_gb$Overall != 0)
 
 ```
 
@@ -306,7 +306,7 @@ Save the above importance dataframes to be used in the Shiny App.
 ```{r}
 # This will export the importance rank datasets as csv files to be used in the shiny app. However, once again we will leave this commented out so that it doesn't export new csv files every time the workflow runs.
 
-# saveRDS(imp_wy_gb, file = here::here("shiny", "aggregated_datasets", "imp_wy_gb.RDS"))
+# saveRDS(imp_gb, file = here::here("shiny", "aggregated_datasets", "imp_gb.RDS"))
 ```
 
 # Model Evaluation
@@ -314,19 +314,19 @@ Save the above importance dataframes to be used in the Shiny App.
 The following section provides visualizations and statistics to evaluate the gradient boosting model performance.
 
 ```{r}
-gb_wy_fit <- round(tail(gbm_model_cv_best$results$Rsquared, 1)*100, 2)
+gb_fit <- round(tail(gbm_model_cv_best$results$Rsquared, 1)*100, 2)
 
 ```
 
-The model explained `r gb_wy_fit`% of variance in NPP.
+The model explained `r gb_fit`% of variance in NPP.
 
 # Visualize results
 
 ```{r plot_imp}
 source(here::here("R", "plot_imp.R"))
 
-wy_plot <- plot_imp(imp_wy_gb)
-wy_plot
+plot <- plot_imp(imp_gb)
+plot
 ```
 
 

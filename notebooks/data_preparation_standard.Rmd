@@ -126,23 +126,23 @@ Next, for our example, there were some changes that needed to be made that may o
 
 ```{r prepare_data}
 # Group by chosen columns
-df_wy <- df %>%   
+df <- df %>%   
   group_by(across(all_of(group_cols)))
 
 # Aggregate average temperatures using the aggregate_temp() function defined above.
-df_wy <- aggregate_temp(df_wy, 'season')
+df <- aggregate_temp(df, 'season')
 
 # Create features for peak swe and the peak_swe/precip ratio
-df_wy <- df_wy %>% 
+df <- df %>% 
   summarise_if(is.numeric, mean) %>% 
   ungroup()
 
 # Rename chosen response variable to "response"
-df_wy <- df_wy %>% 
+df <- df %>% 
   rename("response" = response_var)
 
 # Reorder response variables first and remove any unwanted variables
-df_wy <- df_wy %>% 
+df <- df %>% 
   select(response, everything()) %>%
   select(-c(wy, day, month, year, basinID))
 ```
@@ -156,12 +156,12 @@ This is an optional split: the `clim` variable could have been left as a column 
 if ("clim" %in% names(df)) {
 
   # Create data frame with only climate scenario 0
-  df_wy0 <- df_wy %>% 
+  df_clim0 <- df %>% 
     filter(clim == 0) %>% 
     select(-c(clim, wy))
   
   # Create data frame with only climate scenario 2
-  df_wy2 <- df_wy %>% 
+  df_clim2 <- df %>% 
     filter(clim == 2) %>% 
     select(-c(clim, wy))
   
