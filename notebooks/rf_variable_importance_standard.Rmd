@@ -288,9 +288,24 @@ wy_plot
 ```
 
 
-## Comparison with other measures of importance
+# Further Exploration
 
-While permutation importance was chosen as the primary measure of importance in this workflow, there are other measures that random forests allow for which may be of utility. Although, it's important that the inherent biases previously mentioned (Strobl et al. 2007) are understood. These additional measures will not be described further here, but the function below, `randomForestExplainer::explain_forest()`, is an excellent tool which creates an html document summarizing and comparing a number of them.
+## Shiny App
+
+The capstone team created a suite of interactive visualization tools using the `Shiny` package. It can be used to further explore the original data set and the variable importance results from the workflow. The app can be launched below by setting run_app below to `TRUE`.
+
+```{r}
+run_app <- FALSE
+
+if (run_app == TRUE) {
+  shiny::runApp(here::here("shiny"))
+}
+```
+
+
+## Additional Measures of Importance
+
+While permutation importance was chosen as the primary measure of importance in this workflow, there are other measures that random forests allow for which may be of utility. It's important, however, that the inherent biases previously mentioned (Strobl et al. 2007) are understood. These additional measures will not be described further here, but the function below, `randomForestExplainer::explain_forest()`, is an excellent tool which creates an html document visualizing and comparing a number of them.
 
 To run the explainer, just set the `run_explainer` object below to `TRUE`. It will likely take several minutes to run. The document is set to output to the "docs" folder in the project's root directory, and will be best viewed in your browser.
 
@@ -301,10 +316,21 @@ To run the explainer, just set the `run_explainer` object below to `TRUE`. It wi
 run_explainer <- FALSE
 
 if (run_explainer == TRUE) {
-  library(randomForestExplainer)
   randomForestExplainer::explain_forest(rf_wy0, path = here::here("docs", "forest_explained.html"))
 }
 ```
+
+*Note: the measure of "mse_increase" found in the output document is synonymous with "permutation importance" used in the workflow.*
+
+```{r}
+# Set to false by default due to long run time
+run_explainer <- FALSE
+
+if (run_explainer == TRUE) {
+  randomForestExplainer::explain_forest(rf_wy0, path = here::here("docs", "forest_explained.html"))
+}
+```
+
 
 
 # References
