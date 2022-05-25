@@ -186,7 +186,7 @@ independent_variable <- varSelectInput(
 facet_variable <- varSelectInput(
   inputId = "facet_variable",
   label = tags$h6("Here you can pick a variable to facet the graph by. This allows you to see how the relationships between your independent and dependent variables change at different levels of your facet variable. This takes the range of your facet variable and splits the data into even quantiles. Select variable to facet by here:"),
-  data = df_wy,
+  data = df_wy %>% select(where(is.numeric)),
   selected = "rz_storage"
 )
 

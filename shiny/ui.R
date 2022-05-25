@@ -123,8 +123,12 @@ ui <- fluidPage(
           mainPanel(
             br(),
             "Bivariate Partial Dependence",
-            plotlyOutput(outputId = "partial_dep_plot") %>%
-              withSpinner(type = 6)
+            fluidRow(
+              column = 12,
+              plotlyOutput(outputId = "partial_dep_plot") %>%
+                withSpinner(type = 6)
+            )
+            
           )
         ),
         tabPanel(

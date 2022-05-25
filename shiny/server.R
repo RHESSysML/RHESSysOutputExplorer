@@ -170,13 +170,18 @@ server <- function(input, output) {
   })
 
   output$facet_stats <- DT::renderDataTable({
-    df_wy_reactive() %>%
+    facet_stats <- df_wy_reactive() %>%
       group_by(quantile) %>%
       summarize(
         "Facet Range" = paste0("(", round(min(get(input$facet_variable)), 4), ", ", 
                                round(max(get(input$facet_variable)), 4), ")")
       ) %>%
-      select(-quantile) %>% 
+      select(-quantile)
+    
+    names(facet_stats) <- c(paste0("Facet Range - ", 
+                                   full_name_units(input$facet_variable, metadata)))
+    
+    facet_stats %>% 
       DT::datatable(rownames = FALSE, options = list(dom = "t"))
   })
 
@@ -234,7 +239,7 @@ server <- function(input, output) {
       v1 = input$partial_dep_var1,
       v2 = input$partial_dep_var2,
       grid.size = 15
-    )
+    ) %>% layout(height = "600px")
   })
 
   # Principal Component Analysis --------------------------------------------
