@@ -39,7 +39,7 @@ summarize_var_removal <- function(input_df, table = FALSE, plot_prep = FALSE) {
   # First removing perfectly collinear variables (aliases) which break vif()
   df_num <- df_wy %>% 
     select(where(is.numeric))
-  model <- lm(response ~ ., df_wy_num)
+  model <- lm(response ~ ., df_num)
   aliases <- attributes(alias(model)$Complete)$dimnames[[1]]
   df_num_preds <- df_num %>% 
     select(!response & !aliases)
