@@ -2,19 +2,19 @@
 #'
 #'@description Given "reduced" dataframe of predictor variables, returns a dataframe or formatted datatable with summary information associated with multicollinearity removal
 #'
-#' @param reduced_df Input dataframe returned after multicollinearity removal step
+#' @param input_df Input dataframe containing numeric predictor variables
 #' @param table Logical which determines whether output will be a formatted datatable
 #'
 #' @return dataframe or datatable containing the following values for all predictor variables: removed/selected status, importance rank, and VIF
 #' @export
 #'
-summarize_var_removal <- function(reduced_df, table = FALSE, plot_prep = FALSE) {
+summarize_var_removal <- function(input_df, table = FALSE, plot_prep = FALSE) {
   
   if (plot_prep == TRUE) {
-    df_name <- as.character(reduced_df)
+    df_name <- as.character(input_df)
   } 
   else {
-    df_name <- deparse(substitute(reduced_df))
+    df_name <- deparse(substitute(input_df))
   }
   df_id <- str_extract(df_name, pattern = "wy\\d?")
   clim <- gsub("\\D", "", df_name)
@@ -36,7 +36,15 @@ summarize_var_removal <- function(reduced_df, table = FALSE, plot_prep = FALSE) 
     relocate("selected", .after = "variable")
   
   # Calculating vif again - auto_vif() only returns values for selected variables
-  removed_vif <- vif(all_preds.df)
+  # First removing perfectly collinear variables (aliases) which break vif()
+  df_num <- df_wy %>% 
+    select(where(is.numeric))
+  model <- lm(response ~ ., df_num)
+  aliases <- attributes(alias(model)$Complete)$dimnames[[1]]
+  df_num_preds <- df_num %>% 
+    select(!response & !aliases)
+  
+  removed_vif <- vif(df_num_preds)
   
   # joining dfs to create summary table of removed and selected variables
   removed_summary <- removed_importance %>% 
