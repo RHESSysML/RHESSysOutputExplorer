@@ -6,7 +6,7 @@ library(shiny)
 library(shinythemes)
 library(shinydashboard)
 library(shinycssloaders)
-library(ggbiplot)
+library(ggbiplot) # Must be loaded before tidyverse due to plyr conflicts
 library(tidyverse)
 library(tidyselect)
 library(lubridate)
@@ -38,60 +38,51 @@ setwd(here::here())
 
 ########## Get datasets from the feature importance workflow ########## 
 
-# Original and Aggregate Datasets -----------------------------------------
+# Datasets and Variable Importance Results --------------------------------
 
-# Raw dataset
-df <- readRDS(here::here("data", "sageres.RDS")) %>% 
+load(here::here("data", "input", "prepared_data.RData"))
+load(here::here("data", "output", "model_output.RData"))
+
+# Rename response columns
+df_raw <- df_raw %>% 
+  rename(!!response_var := response) %>% 
   as.data.frame()
 
-# Main aggregated dataset
-df_wy <- readRDS(here::here("shiny", "aggregated_datasets", "df_wy.RDS")) %>%
+df <- df %>% 
+  rename(!!response_var := response) %>% 
   as.data.frame()
 
-# Aggregated dataset for climate scenario 0
-df_wy0 <- readRDS(here::here("shiny", "aggregated_datasets", "df_wy0.RDS")) %>%
+df_clim0 <- df_clim0 %>% 
+  rename(!!response_var := response) %>% 
   as.data.frame()
 
-# Aggregated dataset for climate scenario 2
-df_wy2 <- readRDS(here::here("shiny", "aggregated_datasets", "df_wy2.RDS")) %>%
+df_clim2 <- df_clim2 %>% 
+  rename(!!response_var := response) %>% 
   as.data.frame()
 
-all_datasets <- c("df", "df_wy", "df_wy0", "df_wy2")
-
-# Variable Importance Datasets --------------------------------------------
-
-imp_wy0 <- readRDS(here::here("shiny", "aggregated_datasets", "imp_wy0.RDS")) %>%
-  arrange(Rank) %>%
-  as.data.frame()
-
-imp_wy2 <- readRDS(here::here("shiny", "aggregated_datasets", "imp_wy2.RDS")) %>%
-  arrange(Rank) %>%
-  as.data.frame()
+# Create list of datasets for certain inputs
+all_datasets <- c("df_raw", "df", "df_clim0", "df_clim2")
 
 # Metadata Table ----------------------------------------------------------
 
-metadata <- readRDS(here::here("shiny", "aggregated_datasets", "metadata.RDS")) %>%
+metadata <- readRDS(here::here("shiny", "metadata.RDS")) %>%
   select("variable", "full_name", "units", "description") %>%
   as.data.frame()
 
 # Partial Dependence Plot Data --------------------------------------------
 
-# Get random forest models
-rf_wy0 <- readRDS(here::here("data", "rf_wy0.RDS"))
-rf_wy2 <- readRDS(here::here("data", "rf_wy2.RDS"))
-
 # Create reduced data frames from the random forest models
-df_wy0_reduced <- df_wy0 %>%
-  select(c(rownames(rf_wy0$finalModel$importance)))
+df_clim0_reduced <- df_clim0 %>%
+  select(c(rownames(rf_clim0$finalModel$importance)))
 
-df_wy2_reduced <- df_wy2 %>%
-  select(c(rownames(rf_wy2$finalModel$importance)))
+df_clim2_reduced <- df_clim2 %>%
+  select(c(rownames(rf_clim2$finalModel$importance)))
 
 
 ########## User Inputs ########## 
 
 factor_vars <- c("stratumID", "scen", "topo")
-response_var <- colnames(df_wy[1])
+response_var <- colnames(df[1])
 
 ######### Text for the welcome page ########## 
 
@@ -130,8 +121,8 @@ dataset_sel <- selectInput(
 
 stratum_sel <- checkboxGroupInput("stratum_sel",
   label = tags$h4("Select desired strata to look at:"),
-  choices = unique(df_wy$stratumID),
-  selected = unique(df_wy$stratumID)
+  choices = unique(df$stratumID),
+  selected = unique(df$stratumID)
 )
 
 topo_sel <- checkboxGroupInput("topo_sel",
@@ -162,9 +153,9 @@ clim_sel <- checkboxGroupInput("clim_sel",
 
 wy_sel <- sliderInput("wy_sel",
   label = tags$h4("Select water year range:"),
-  min = min(df_wy$wy),
-  max = max(df_wy$wy),
-  value = c(min(df_wy$wy), max(df_wy$wy)),
+  min = min(df$wy),
+  max = max(df$wy),
+  value = c(min(df$wy), max(df$wy)),
   sep = "",
   step = 1
 )
@@ -172,21 +163,21 @@ wy_sel <- sliderInput("wy_sel",
 dependent_variable <- varSelectInput(
   inputId = "dependent_variable",
   label = tags$h4("Select your dependent variable:"),
-  data = df_wy,
+  data = df,
   selected = "npp"
 )
 
 independent_variable <- varSelectInput(
   inputId = "independent_variable",
   label = tags$h4("Select your independent variable:"),
-  data = df_wy,
+  data = df,
   selected = "precip"
 )
 
 facet_variable <- varSelectInput(
   inputId = "facet_variable",
   label = tags$h6("Here you can pick a variable to facet the graph by. This allows you to see how the relationships between your independent and dependent variables change at different levels of your facet variable. This takes the range of your facet variable and splits the data into even quantiles. Select variable to facet by here:"),
-  data = df_wy %>% select(where(is.numeric)),
+  data = df %>% select(where(is.numeric)),
   selected = "rz_storage"
 )
 
@@ -208,13 +199,13 @@ partial_dep_model <- selectInput("partial_dep_model",
 
 partial_dep_var1 <- selectInput("partial_dep_var1",
   label = tags$h4("Select Variable 1"),
-  choices = colnames(df_wy0_reduced),
+  choices = colnames(df_clim0_reduced),
   multiple = FALSE
 )
 
 partial_dep_var2 <- selectInput("partial_dep_var2",
   label = tags$h4("Select Variable 2"),
-  choices = colnames(df_wy0_reduced),
+  choices = colnames(df_clim0_reduced),
   multiple = FALSE
 )
 
@@ -228,7 +219,7 @@ pca_data_select <- selectInput("pca_data_select",
 
 pca_group_select <- selectInput("pca_group_select",
   label = tags$h4("Select your groups"),
-  choices = c(colnames(df_wy)[sapply(df_wy, is.factor)]),
+  choices = c(colnames(df)[sapply(df, is.factor)]),
   multiple = FALSE)
 
 pca_alpha <- sliderInput("pca_alpha",
@@ -254,13 +245,13 @@ dist_data_select <- selectInput("dist_data_select",
 
 dist_group_select <- selectInput("dist_group_select",
   label = tags$h4("Select your groups"),
-  choices = c(colnames(df_wy)[sapply(df_wy, is.factor)]),
+  choices = c(colnames(df)[sapply(df, is.factor)]),
   multiple = FALSE
 )
 
 dist_num_select <- selectInput("dist_num_select",
   label = tags$h4("Select numeric variable"),
-  choices = c(colnames(df_wy)[sapply(df_wy, is.numeric)]),
+  choices = c(colnames(df)[sapply(df, is.numeric)]),
   multiple = FALSE
 )
 
@@ -268,28 +259,28 @@ dist_num_select <- selectInput("dist_num_select",
 
 ts_data_select <- selectInput("ts_data_select",
   label = tags$h4("Select your dataset"),
-  choices = all_datasets,
+  choices = all_datasets[1:2],
   selected = all_datasets[2],
   multiple = FALSE
 )
 
 ts_group_select <- selectInput("ts_group_select",
   label = tags$h4("Select your groups"),
-  choices = c(colnames(df_wy)[sapply(df_wy, is.factor)]),
+  choices = c(colnames(df)[sapply(df, is.factor)]),
   multiple = FALSE
 )
 
 ts_num_select <- selectInput("ts_num_select",
   label = tags$h4("Select numeric variable"),
-  choices = c(colnames(df_wy)[sapply(df_wy, is.numeric)]),
+  choices = c(colnames(df)[sapply(df, is.numeric)]),
   multiple = FALSE
 )
 
 ts_wy_sel <- sliderInput("ts_wy_sel",
   label = tags$h4("Select water year range:"),
-  min = min(df_wy$wy),
-  max = max(df_wy$wy),
-  value = c(min(df_wy$wy), max(df_wy$wy)),
+  min = min(df$wy),
+  max = max(df$wy),
+  value = c(min(df$wy), max(df$wy)),
   sep = "",
   step = 1
 )

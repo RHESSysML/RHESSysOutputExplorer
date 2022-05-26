@@ -21,7 +21,7 @@ library(here)
 ## Load Data
 
 ```{r load_data, message = FALSE}
-df <- readRDS(here::here("data", "sageres.RDS")) 
+df <- readRDS(here::here("data", "input", "sageres.RDS")) 
 
 # Fix scen column
 df <- df %>% 
@@ -94,6 +94,6 @@ df_cats <- df_cats %>%
 ```
 
 ```{r}
-save.image(here::here("data", "sagehen_cats.RData"))
+save.image(here::here("data", "input", "sagehen_cats.RData"))
 ```
 

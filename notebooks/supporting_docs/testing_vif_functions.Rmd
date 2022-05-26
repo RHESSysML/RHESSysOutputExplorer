@@ -57,7 +57,7 @@ source(here::here("R", "plot_removed_vif.R"))
 ## Load data
 
 ```{r load_data}
-load(here::here("data", "prepared_data.RData"))
+load(here::here("data", "input", "prepared_data.RData"))
 ```
 
 ## Prepare data for auto_vif function

@@ -46,14 +46,12 @@ library(spatialRF)
 library(randomForest)
 library(party)
 library(partykit)
-library(permimp)
 library(rfUtilities)
 library(randomForestExplainer)
-library(fastshap)
 ```
 
 ```{r}
-load(here::here("data", "prepared_data_standard.RData"))
+load(here::here("data", "input", "prepared_data_standard.RData"))
 ```
 
 
@@ -251,13 +249,6 @@ imp <- varImp(rf$finalModel, scale = FALSE) %>%
   mutate(Rank = rank(-Overall))
 ```
 
-Save the above importance dataframes to be used in the Shiny App.
-```{r}
-# This will export the importance rank datasets as csv files to be used in the shiny app. However, once again we will leave this commented out so that it doesn't export new csv files every time the workflow runs.
-
-# saveRDS(imp0, file = here("shiny", "aggregated_datasets", "imp0.RDS"))
-```
-
 
 # Model Evaluation
 
@@ -293,6 +284,12 @@ plot
 ## Shiny App
 
 The capstone team created an application with a suite of interactive visualization tools using the `Shiny` package. It can be used to further explore the original data set and the variable importance results from the workflow. The app can be launched below by setting `run_app` below to `TRUE`.
+
+First, the following objects are saved for use in the app.
+
+```{r save_model_output}
+save(rf, imp, file = here::here("data", "output", "model_output_standard.RData"))
+```
 
 ```{r}
 run_app <- FALSE

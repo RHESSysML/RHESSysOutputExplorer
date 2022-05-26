@@ -42,16 +42,16 @@ ui <- fluidPage(
         tabPanel(
           "Scatter Plot",
           sidebarPanel(
-            if ("stratumID" %in% colnames(df_wy)) {
+            if ("stratumID" %in% colnames(df)) {
               stratum_sel
             },
-            if ("topo" %in% colnames(df_wy)) {
+            if ("topo" %in% colnames(df)) {
               topo_sel
             },
-            if ("clim" %in% colnames(df_wy)) {
+            if ("clim" %in% colnames(df)) {
               clim_sel
             },
-            if ("wy" %in% colnames(df_wy)) {
+            if ("wy" %in% colnames(df)) {
               wy_sel
             },
             "Variables to Explore:",

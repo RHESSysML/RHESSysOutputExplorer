@@ -55,7 +55,7 @@ library(fastshap)
 ```
 
 ```{r}
-load(here::here("data", "sagehen_cats.RData"))
+load(here::here("data", "input", "sagehen_cats.RData"))
 ```
 
 
