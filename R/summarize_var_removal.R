@@ -17,12 +17,12 @@ summarize_var_removal <- function(input_df, clim = NULL, table = TRUE, plot_prep
     df_name <- deparse(substitute(input_df))
     clim_id <- paste0("clim", clim)
     select_variables <- get(paste0(clim_id, "_select_variables"))
-    imp <- get(paste0("imp", clim))
+    prelim_imp <- get(paste0("prelim_imp_clim", clim))
     df <- get(paste0("df_clim", clim))
   }
   
   
-  removed_importance <- imp$finalModel["importance"] %>% 
+  removed_importance <- prelim_imp$finalModel["importance"] %>% 
     data.frame() %>% 
     rownames_to_column("variable") %>%
     mutate("importance_rank" = rank(-importance..IncMSE)) %>% 
