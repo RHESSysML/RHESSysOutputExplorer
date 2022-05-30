@@ -22,12 +22,12 @@ Here we demonstrate the use of the conditional permutation importance (CPI) impl
 
 ```{r}
 # Random forests grown using caret::train()
-load(here::here("testing", "saved_output", "rf_wy0_model.RData"))
-load(here::here("testing", "saved_output", "rf_wy2_model.RData"))
+readRDS(here::here("data", "rf_clim0.RDS"))
+readRDS(here::here("data", "rf_clim2.RDS"))
 
 # Importance output from permimp::permimp()
-load(here::here("testing", "saved_output", "conditional_output_wy0.RData"))
-load(here::here("testing", "saved_output", "conditional_output_wy2.RData"))
+load(here::here("data", "supporting_docs_data", "permimp_sagehen_clim0.RData"))
+load(here::here("data", "supporting_docs_data", "permimp_sagehen_clim2.RData"))
 ```
 
 ## Partial vs conditonal permutation importance
