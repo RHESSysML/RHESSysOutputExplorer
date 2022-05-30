@@ -147,7 +147,7 @@ Below, there are two methods for setting preference order: (1) Manually creating
 # First climate scenario
 
 # Find preliminary importance using random forest
-imp0 <- train(x = df_clim0 %>% select(!response),
+prelim_imp_clim0 <- train(x = df_clim0 %>% select(!response),
               y = df_clim0$response,
               method = 'rf',
               importance = TRUE,
@@ -155,14 +155,14 @@ imp0 <- train(x = df_clim0 %>% select(!response),
               trControl = trainControl(method = "none", seed = 4326))
 
 # Set preference order based on variable importance
-pref_order0 <- varImp(imp0$finalModel, scale = FALSE) %>% 
+pref_order0 <- varImp(prelim_imp_clim0$finalModel, scale = FALSE) %>% 
   arrange(-Overall) %>% 
   rownames()
 
 # Second climate scenario
 
 # Find preliminary importance using random forest
-imp2 <- train(x = df_clim2 %>% select(!response),
+prelim_imp_clim2 <- train(x = df_clim2 %>% select(!response),
               y = df_clim2$response,
               method = 'rf',
               importance = TRUE,
@@ -170,7 +170,7 @@ imp2 <- train(x = df_clim2 %>% select(!response),
               trControl = trainControl(method = "none", seed = 4326))
 
 # Set preference order based on variable importance
-pref_order2 <- varImp(imp2$finalModel, scale = FALSE) %>% 
+pref_order2 <- varImp(prelim_imp_clim2$finalModel, scale = FALSE) %>% 
   arrange(-Overall) %>% 
   rownames()
 ```
