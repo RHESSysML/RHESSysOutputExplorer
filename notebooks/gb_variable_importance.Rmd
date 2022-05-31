@@ -55,7 +55,7 @@ Note that this workflow will use data that is aggregated by water year but **not
 ## Load Data
 
 ```{r}
-load(here::here("data", "prepared_data.RData"))
+load(here::here("data", "input", "prepared_data.RData"))
 ```
 
 First, we want to get a summary description of the data set. This is crucial for many reasons:
@@ -328,6 +328,7 @@ tune_grid <- expand.grid(
   shrinkage = c(0.01, 0.02, 0.05, 0.1, 0.3),
   interaction.depth = c(2, 3, 4, 5, 6), 
   n.minobsinnode = c(10, 30, 50))
+
 ```
 
 Note: these parameters are unique to the `gbm` package; there are many packages to implement gradient boosting 
@@ -349,7 +350,7 @@ gbm_model_cv0 <- caret::train(
   verbose = FALSE)
 
 #gbm_model_cv0 <- read_rds(here::here("models/GBm0.rds"))
-saveRDS(gbm_model_cv0, file = here::here("data/GBm0.RDS"))
+saveRDS(gbm_model_cv0, file = here::here("data", "input", "GBm0.RDS"))
 ```
 
 ```{r}
@@ -365,7 +366,7 @@ gbm_model_cv2 <- caret::train(
   verbose = FALSE)
 
 #gbm_model_cv2 <- read_rds(here::here("models/GBm2.rds"))
-saveRDS(gbm_model_cv2, file = here::here("data/GBm2.RDS"))
+saveRDS(gbm_model_cv2, file = here::here("data", "input", "GBm2.RDS"))
 ```
 
 
@@ -424,16 +425,6 @@ imp_gb2 = imp_gb2 %>% mutate(Variable = row.names(imp_gb2)) %>%
 
 ```
 
-
-Save the above importance dataframes to be used in the Shiny App.
-
-```{r}
-# This will export the importance rank datasets as csv files to be used in the shiny app. However, once again we will leave this commented out so that it doesn't export new csv files every time the workflow runs.
-
-# saveRDS(imp_gb0, file = here::here("shiny", "aggregated_datasets", "imp_gb0.RDS"))
-# saveRDS(imp_gb2, file = here::here("shiny", "aggregated_datasets", "imp_gb2.RDS"))
-```
-
 # Model Evaluation
 
 The following section provides visualizations and statistics to evaluate the gradient boosting model performance.
@@ -475,6 +466,12 @@ gbm_model_cv_best$results$Rsquared
 ## Shiny App
 
 The capstone team created an application with a suite of interactive visualization tools using the `Shiny` package. It can be used to further explore the original data set and the variable importance results from the workflow. The app can be launched below by setting `run_app` below to `TRUE`.
+
+First, the following objects are saved for use in the app.
+
+```{r save_model_output}
+save(imp_gb0, imp_gb2, file = here::here("data", "output", "gb_model_output.RData"))
+```
 
 ```{r}
 run_app <- FALSE

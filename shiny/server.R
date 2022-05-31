@@ -18,10 +18,10 @@ server <- function(input, output) {
 
   data_display <- reactive({
     switch(input$dataset_sel,
-      "Raw Data" = df,
-      "Aggregated Data" = df_wy,
-      "Aggregated Data (Normal Climate)" = df_wy0,
-      "Aggregated Data (+2 Degree C Climate)" = df_wy2
+      "Raw Data" = df_raw,
+      "Aggregated Data" = df,
+      "Aggregated Data (Normal Climate)" = df_clim0,
+      "Aggregated Data (+2 Degree C Climate)" = df_clim2
     )
   })
 
@@ -38,11 +38,11 @@ server <- function(input, output) {
   # Variable Importance -----------------------------------------------------
 
   output$imp_plot <- renderPlot({
-    plot_imp(imp_wy0) + plot_imp(imp_wy2)
+    plot_imp(imp_clim0) + plot_imp(imp_clim2)
   })
 
   output$imp_table <- function() {
-    df_imp_table(imp_wy0, imp_wy2)
+    df_imp_table(imp_clim0, imp_clim2)
   }
 
   # Visualizations ----------------------------------------------------------
@@ -50,25 +50,25 @@ server <- function(input, output) {
   # Create reactive data frame for visualizations tab plot
   df_wy_reactive <- reactive({
     validate(
-      if ("stratumID" %in% colnames(df_wy)) {
+      if ("stratumID" %in% colnames(df)) {
         need(
           length(input$stratum_sel) > 0,
           "No data contained in selected strata. Please select more strata."
         )
       },
-      if ("topo" %in% colnames(df_wy)) {
+      if ("topo" %in% colnames(df)) {
         need(
           length(input$topo_sel) > 0,
           "No data contained in selected topographies. Please select more topography types."
         )
       },
-      if ("clim" %in% colnames(df_wy)) {
+      if ("clim" %in% colnames(df)) {
         need(
           length(input$clim_sel) > 0,
           "Must have at least one climate scenario selected."
         )
       },
-      if ("wy" %in% colnames(df_wy)) {
+      if ("wy" %in% colnames(df)) {
         need(
           length(input$wy_sel) > 0,
           "No data for selected years."
@@ -76,22 +76,22 @@ server <- function(input, output) {
       }
     )
 
-    reactive_df <- df_wy %>%
+    reactive_df <- df %>%
       dplyr::mutate(quantile = paste0("Quantile ", dplyr::ntile(!!input$facet_variable, input$quantile_sel)))
 
-    if ("stratumID" %in% colnames(df_wy)) {
+    if ("stratumID" %in% colnames(df)) {
       reactive_df <- reactive_df %>% dplyr::filter(stratumID %in% input$stratum_sel)
     }
 
-    if ("topo" %in% colnames(df_wy)) {
+    if ("topo" %in% colnames(df)) {
       reactive_df <- reactive_df %>% dplyr::filter(topo %in% input$topo_sel)
     }
 
-    if ("clim" %in% colnames(df_wy)) {
+    if ("clim" %in% colnames(df)) {
       reactive_df <- reactive_df %>% dplyr::filter(clim %in% input$clim_sel)
     }
 
-    if ("wy" %in% colnames(df_wy)) {
+    if ("wy" %in% colnames(df)) {
       reactive_df <- reactive_df %>% dplyr::filter(wy %in% input$wy_sel[1]:input$wy_sel[2])
     }
 
@@ -193,9 +193,9 @@ server <- function(input, output) {
     x <- input$partial_dep_model
 
     if (x == "Normal Scenario") {
-      cols <- colnames(df_wy0_reduced %>% select(where(is.numeric)))
+      cols <- colnames(df_clim0_reduced %>% select(where(is.numeric)))
     } else if (x == "+2 Degree C Scenario") {
-      cols <- colnames(df_wy2_reduced %>% select(where(is.numeric)))
+      cols <- colnames(df_clim2_reduced %>% select(where(is.numeric)))
     }
 
     updateSelectInput(
@@ -216,18 +216,18 @@ server <- function(input, output) {
   # Get correct RF model based on input
   partial_dep_model_obj <- reactive({
     if (input$partial_dep_model == "Normal Scenario") {
-      rf_wy0$finalModel
+      rf_clim0$finalModel
     } else if (input$partial_dep_model == "+2 Degree C Scenario") {
-      rf_wy2$finalModel
+      rf_clim2$finalModel
     }
   })
 
   # Get correct predictor data frame based on input
   partial_dep_data <- reactive({
     if (input$partial_dep_model == "Normal Scenario") {
-      df_wy0_reduced
+      df_clim0_reduced
     } else if (input$partial_dep_model == "+2 Degree C Scenario") {
-      df_wy2_reduced
+      df_clim2_reduced
     }
   })
 

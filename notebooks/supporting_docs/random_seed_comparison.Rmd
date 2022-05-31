@@ -28,11 +28,12 @@ Here we test the significance of random seed on the results of the random forest
 
 ## Loading outputs from workflow
 
-We will use the `df_wy0` dataset for the purpose of this example.
+We will use the `df_clim0` dataset for the purpose of this example.
 
 ```{r load_data, message=FALSE}
-df_wy0 <- readRDS(here::here("shiny", "aggregated_datasets", "df_wy0.RDS")) %>% 
-  rename(response = 1)
+load(here::here("data", "input", "prepared_data.RData"))
+
+df_clim0 <- df_clim0 %>% rename(response = 1)
 ```
 
 ## Remove Multicollinearity
@@ -41,16 +42,16 @@ In order to replicate the workflow's results, we will remove multicollinearity.
 
 ```{r remove_multicollinearity}
 # Save data frames of predictor variables for first climate scenario
-df_wy0_num_preds <- df_wy0 %>% 
+df_clim0_num_preds <- df_clim0 %>% 
   select(!response & where(is.numeric))
 
-df_wy0_fpreds <- df_wy0 %>% 
+df_clim0_fpreds <- df_clim0 %>% 
   select(!response & where(is.factor)) %>% 
   colnames()
 
 # Find preliminary importance using random forest
-imp0 <- train(x = df_wy0 %>% select(!response),
-              y = df_wy0$response,
+imp0 <- train(x = df_clim0 %>% select(!response),
+              y = df_clim0$response,
               method = 'rf',
               importance = TRUE,
               replace = TRUE,
@@ -70,13 +71,13 @@ source(here::here("R", "remove_vif.R"))
 source(here::here("R", "remove_cor.R"))
 
 # Create list of selected variables
-wy0_vif <- remove_vif(df_wy0_num_preds, vif.threshold = vif.threshold, pref_order0)$selected.variables
-wy0_cor <- remove_cor(df_wy0_num_preds, cor.threshold = cor.threshold, pref_order0)$selected.variables
-wy0_select_variables <- unique(append(wy0_vif, wy0_cor))
+clim0_vif <- remove_vif(df_clim0_num_preds, vif.threshold = vif.threshold, pref_order0)$selected.variables
+clim0_cor <- remove_cor(df_clim0_num_preds, cor.threshold = cor.threshold, pref_order0)$selected.variables
+clim0_select_variables <- unique(append(wy0_vif, wy0_cor))
 
 # Remove numeric variables with multicollinearity
-df_wy0_reduced <- df_wy0 %>% 
-  select(c(response, all_of(df_wy0_fpreds), all_of(wy0_select_variables)))
+df_clim0_reduced <- df_clim0 %>% 
+  select(c(response, all_of(df_clim0_fpreds), all_of(clim0_select_variables)))
 ```
 
 ## Hyper-Parameter Tuning
@@ -88,9 +89,9 @@ source(here::here("R", "tune_rf_model.R"))
 
 set.seed(4326)
 
-df_wy0_reduced <- as.data.frame(df_wy0_reduced)
+df_clim0_reduced <- as.data.frame(df_clim0_reduced)
 
-mtry0 <- tune_rf_model(df_wy0_reduced)
+mtry0 <- tune_rf_model(df_clim0_reduced)
 bestmtry0 <- match(min(mtry0), mtry0)
 ggplot(data = as.data.frame(mtry0), aes(x = 1:length(mtry0), y = mtry0)) +
   geom_vline(xintercept = bestmtry0, linetype = "dashed") +
@@ -99,7 +100,7 @@ ggplot(data = as.data.frame(mtry0), aes(x = 1:length(mtry0), y = mtry0)) +
   theme_light() +
   labs(x = "mtry value",
        y = "OOB Error",
-       title = paste0("The best mtry value for ", deparse(substitute(df_wy0_reduced)), " is ", bestmtry0))
+       title = paste0("The best mtry value for ", deparse(substitute(df_clim0_reduced)), " is ", bestmtry0))
 ```
 
 ## Random Forest Models
@@ -107,23 +108,23 @@ ggplot(data = as.data.frame(mtry0), aes(x = 1:length(mtry0), y = mtry0)) +
 Now, we generate 5 random forest models using the same parameters as used in the workflow. The only difference between the models are the seed.
 
 ```{r run_models}
-rf1 <- train(x = df_wy0_reduced %>% select(!response), y = df_wy0_reduced$response,
+rf1 <- train(x = df_clim0_reduced %>% select(!response), y = df_clim0_reduced$response,
              method = 'rf', .mtry = bestmtry0, ntree = 500, importance = TRUE,
              replace = TRUE, trControl = trainControl(method = "none", seed = 4326))
 
-rf2 <- train(x = df_wy0_reduced %>% select(!response), y = df_wy0_reduced$response,
+rf2 <- train(x = df_clim0_reduced %>% select(!response), y = df_clim0_reduced$response,
              method = 'rf', .mtry = bestmtry0, ntree = 500, importance = TRUE,
              replace = TRUE, trControl = trainControl(method = "none", seed = 1098))
 
-rf3 <- train(x = df_wy0_reduced %>% select(!response), y = df_wy0_reduced$response,
+rf3 <- train(x = df_clim0_reduced %>% select(!response), y = df_clim0_reduced$response,
              method = 'rf', .mtry = bestmtry0, ntree = 500, importance = TRUE,
              replace = TRUE, trControl = trainControl(method = "none", seed = 420))
 
-rf4 <- train(x = df_wy0_reduced %>% select(!response), y = df_wy0_reduced$response,
+rf4 <- train(x = df_clim0_reduced %>% select(!response), y = df_clim0_reduced$response,
              method = 'rf', .mtry = bestmtry0, ntree = 500, importance = TRUE,
              replace = TRUE, trControl = trainControl(method = "none", seed = 1001))
 
-rf5 <- train(x = df_wy0_reduced %>% select(!response), y = df_wy0_reduced$response,
+rf5 <- train(x = df_clim0_reduced %>% select(!response), y = df_clim0_reduced$response,
              method = 'rf', .mtry = bestmtry0, ntree = 500, importance = TRUE,
              replace = TRUE, trControl = trainControl(method = "none", seed = 2))
 ```

@@ -17,8 +17,7 @@ library(plotly)
 # Load Data
 
 ```{r load_data, message = FALSE}
-df0 <- readRDS(here::here("shiny", "aggregated_datasets", "df_wy0.RDS")) 
-df2 <- readRDS(here::here("shiny", "aggregated_datasets", "df_wy2.RDS"))
+load(here::here("data", "input", "prepared_data.RData"))
 ```
 
 # Principal Component Analysis (PCA)
@@ -27,14 +26,14 @@ df2 <- readRDS(here::here("shiny", "aggregated_datasets", "df_wy2.RDS"))
 
 ```{r}
 # PCA works best with numerical data
-df0.pca <- df0 %>% 
+df0.pca <- df_clim0 %>% 
   select(where(is.numeric)) %>% 
   select(-c(slope, aspect, elev))
 
 df0.pca <- prcomp(df0.pca, center = TRUE, scale. = TRUE)
 
 # PCA works best with numerical data
-df2.pca <- df2 %>% 
+df2.pca <- df_clim_2 %>% 
   select(where(is.numeric)) %>% 
   select(-c(slope, aspect, elev))
 

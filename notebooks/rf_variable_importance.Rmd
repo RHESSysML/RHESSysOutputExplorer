@@ -46,14 +46,12 @@ library(spatialRF)
 library(randomForest)
 library(party)
 library(partykit)
-library(permimp)
 library(rfUtilities)
 library(randomForestExplainer)
-library(fastshap)
 ```
 
 ```{r}
-load(here::here("data", "prepared_data.RData"))
+load(here::here("data", "input", "prepared_data.RData"))
 ```
 
 
@@ -330,12 +328,6 @@ rf_clim2 <- train(x = df_clim2_reduced %>% select(!response),
                 trControl = trainControl(method = "none", seed = 4326)) # to use 10-fold cross validation, method = "cv", number = 10
 ```
 
-```{r save_rf_models}
-# save models for the Shiny app
-saveRDS(rf_clim0, here::here("data", "rf_clim0.RDS"))
-saveRDS(rf_clim2, here::here("data", "rf_clim2.RDS"))
-```
-
 Assessing feature importance is a complex task with many possible approaches. Tree based models like random forest offer convenient "split-improvement" measures, like mean increase in purity and minimum depth, which are intrinsically derived during model construction. However, these have been shown to be biased towards variables with many categories or large value ranges (Strobl et al. 2007). Despite some of their shortcomings, these importance measures can provide insights are further explored at the end of this document.
 
 As the primary measure of importance we instead use partial permutation importance via the `varImp` function. Permutation importance has been tested and determined to be the most unbiased importance metric for data with a mix of categorical and continuous variables with a variety of classes and ranges, respectively. This is calculated in the following steps...
@@ -349,22 +341,15 @@ As the primary measure of importance we instead use partial permutation importan
 4. Importance of the permuted variable is deemed to be the mean loss in accuracy when its values were permuted.
 
 ```{r variable_importance}
-imp_wy0 <- varImp(rf_clim0$finalModel, scale = FALSE) %>% 
+imp_clim0 <- varImp(rf_clim0$finalModel, scale = FALSE) %>% 
   rownames_to_column("Variable") %>% 
-  mutate(Rank = rank(-Overall))
+  mutate(Rank = rank(-Overall)) %>% 
+  arrange(Rank)
 
-imp_wy2 <- varImp(rf_clim2$finalModel, scale = FALSE) %>% 
+imp_clim2 <- varImp(rf_clim2$finalModel, scale = FALSE) %>% 
   rownames_to_column("Variable") %>% 
-  mutate(Rank = rank(-Overall))
-```
-
-Save the above importance dataframes to be used in the Shiny App.
-
-```{r}
-# This will export the importance rank datasets as csv files to be used in the shiny app. However, once again we will leave this commented out so that it doesn't export new csv files every time the workflow runs.
-
-# saveRDS(imp_wy0, file = here::here("shiny", "aggregated_datasets", "imp_wy0.RDS"))
-# saveRDS(imp_wy2, file = here::here("shiny", "aggregated_datasets", "imp_wy2.RDS"))
+  mutate(Rank = rank(-Overall)) %>% 
+  arrange(Rank)
 ```
 
 
@@ -400,7 +385,7 @@ The following table shows the relative importance of predictor variables between
 ```{r}
 source(here::here("R", "df_imp_table.R"))
 
-df_imp_table(imp_wy0, imp_wy2)
+df_imp_table(imp_clim0, imp_clim2)
 ```
 
 We see that precipitation and rz_storage are the first and second most important predictors of NPP for both climate scenarios. The highest difference is evaporation - which is third most important for the base climate scenario and sixth for the +2 degree Celsius warming scenario. This indicates that the relationship between NPP and evaporation has changed given warming, which could be investigated further. This process can be repeated for all other observations found in the table.
@@ -410,8 +395,8 @@ This same information is plotted below. The variable importance plots also revea
 ```{r plot_imp}
 source(here::here("R", "plot_imp.R"))
 
-wy0_plot <- plot_imp(imp_wy0)
-wy2_plot <- plot_imp(imp_wy2)
+wy0_plot <- plot_imp(imp_clim0)
+wy2_plot <- plot_imp(imp_clim2)
 
 wy0_plot + wy2_plot 
 ```
@@ -421,6 +406,12 @@ wy0_plot + wy2_plot
 ## Shiny App
 
 The capstone team created an application with a suite of interactive visualization tools using the `Shiny` package. It can be used to further explore the original data set and the variable importance results from the workflow. The app can be launched below by setting `run_app` below to `TRUE`.
+
+First, the following objects are saved for use in the app.
+
+```{r save_model_output}
+save(rf_clim0, rf_clim2, imp_clim0, imp_clim2, file = here::here("data", "output", "model_output.RData"))
+```
 
 ```{r}
 run_app <- FALSE
