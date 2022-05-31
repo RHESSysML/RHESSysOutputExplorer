@@ -70,14 +70,14 @@ Here, we display summary statistics for the base climate scenario data.
 ```{r describe_data}
 source(here::here("R", "summarize_data.R"))
 
-summarize_data(df_wy0)
-summarize_data(df_wy2)
+summarize_data(df_clim0)
+summarize_data(df_clim2)
 ```
 
 We can also look at the key study area characteristics. In this Sagehen Creek study area, there are six landscape positions where RHESSys was run.
 
 ```{r describe_strata}
-strata <- df_wy %>%
+strata <- df %>%
   filter(clim == 0) %>% 
   select(c(stratumID, topo, elev, aspect, slope)) %>%
   group_by(stratumID, topo) %>% 
@@ -114,18 +114,18 @@ First, we create data frames containing only the predictor variables to assist w
 
 ```{r get_predictors}
 # Save data frames of predictor variables for first climate scenario
-df_wy0_num_preds <- df_wy0 %>% 
+df_clim0_num_preds <- df_clim0 %>% 
   select(!response & where(is.numeric))
 
-df_wy0_fpreds <- df_wy0 %>% 
+df_clim0_fpreds <- df_clim0 %>% 
   select(!response & where(is.factor)) %>% 
   colnames()
 
 # Save data frames of predictor variables for second climate scenario
-df_wy2_num_preds <- df_wy2 %>% 
+df_clim2_num_preds <- df_clim2 %>% 
   select(!response & where(is.numeric))
 
-df_wy2_fpreds <- df_wy2 %>% 
+df_clim2_fpreds <- df_clim2 %>% 
   select(!response & where(is.factor)) %>% 
   colnames()
 ```
@@ -147,30 +147,30 @@ Below, there are two methods for setting preference order: (1) Manually creating
 # First climate scenario
 
 # Find preliminary importance using random forest
-imp0 <- train(x = df_wy0 %>% select(!response),
-              y = df_wy0$response,
+prelim_imp_clim0 <- train(x = df_clim0 %>% select(!response),
+              y = df_clim0$response,
               method = 'rf',
               importance = TRUE,
               replace = TRUE,
               trControl = trainControl(method = "none", seed = 4326))
 
 # Set preference order based on variable importance
-pref_order0 <- varImp(imp0$finalModel, scale = FALSE) %>% 
+pref_order0 <- varImp(prelim_imp_clim0$finalModel, scale = FALSE) %>% 
   arrange(-Overall) %>% 
   rownames()
 
 # Second climate scenario
 
 # Find preliminary importance using random forest
-imp2 <- train(x = df_wy2 %>% select(!response),
-              y = df_wy2$response,
+prelim_imp_clim2 <- train(x = df_clim2 %>% select(!response),
+              y = df_clim2$response,
               method = 'rf',
               importance = TRUE,
               replace = TRUE,
               trControl = trainControl(method = "none", seed = 4326))
 
 # Set preference order based on variable importance
-pref_order2 <- varImp(imp2$finalModel, scale = FALSE) %>% 
+pref_order2 <- varImp(prelim_imp_clim2$finalModel, scale = FALSE) %>% 
   arrange(-Overall) %>% 
   rownames()
 ```
@@ -187,24 +187,24 @@ source(here::here("R", "remove_vif.R"))
 source(here::here("R", "remove_cor.R"))
 
 # Create list of selected variables
-wy0_vif <- remove_vif(df_wy0_num_preds, vif.threshold = vif.threshold, pref_order0)$selected.variables
-wy0_cor <- remove_cor(df_wy0_num_preds, cor.threshold = cor.threshold, pref_order0)$selected.variables
-wy0_select_variables <- intersect(wy0_vif, wy0_cor)
+clim0_vif <- remove_vif(df_clim0_num_preds, vif.threshold = vif.threshold, pref_order0)$selected.variables
+clim0_cor <- remove_cor(df_clim0_num_preds, cor.threshold = cor.threshold, pref_order0)$selected.variables
+clim0_select_variables <- intersect(clim0_vif, clim0_cor)
 
-wy2_vif <- remove_vif(df_wy2_num_preds, vif.threshold = vif.threshold, pref_order2)$selected.variables
-wy2_cor <- remove_cor(df_wy2_num_preds, cor.threshold = cor.threshold, pref_order2)$selected.variables
-wy2_select_variables <- intersect(wy2_vif, wy2_cor)
+clim2_vif <- remove_vif(df_clim2_num_preds, vif.threshold = vif.threshold, pref_order2)$selected.variables
+clim2_cor <- remove_cor(df_clim2_num_preds, cor.threshold = cor.threshold, pref_order2)$selected.variables
+clim2_select_variables <- intersect(clim2_vif, clim2_cor)
 
 # Combine selected variables with factors
-df_wy0_preds <- c(all_of(df_wy0_fpreds), all_of(wy0_select_variables))
-df_wy2_preds <- c(all_of(df_wy2_fpreds), all_of(wy2_select_variables))
+df_clim0_preds <- c(all_of(df_clim0_fpreds), all_of(clim0_select_variables))
+df_clim2_preds <- c(all_of(df_clim2_fpreds), all_of(clim2_select_variables))
 
 # Remove numeric variables with multicollinearity
-df_wy0_reduced <- df_wy0 %>% 
-  select(c(response, all_of(df_wy0_preds)))
+df_clim0_reduced <- df_clim0 %>% 
+  select(c(response, all_of(df_clim0_preds)))
 
-df_wy2_reduced <- df_wy2 %>% 
-  select(c(response, all_of(df_wy2_preds)))
+df_clim2_reduced <- df_clim2 %>% 
+  select(c(response, all_of(df_clim2_preds)))
 ```
 
 
@@ -226,13 +226,13 @@ The following functions output summary tables and plots showing variable selecti
 #### Variable Removal Summary Table
 
 ```{r vif_summary_table_0, warning=FALSE}
-summarize_var_removal(df_wy0_num_preds, table = TRUE)
+summarize_var_removal(df_clim0_num_preds, clim = 0, table = TRUE)
 ```
 
 #### Cor Summary Plot
 
 ```{r}
-plot_removed_cor(wy0_select_variables, df_wy0_num_preds)
+plot_removed_cor(clim0_select_variables, df_clim0_num_preds)
 ```
 
 
@@ -241,13 +241,13 @@ plot_removed_cor(wy0_select_variables, df_wy0_num_preds)
 #### Variable Removal Summary Table
 
 ```{r vif_summary_table_2, warning=FALSE}
-summarize_var_removal(df_wy2_num_preds, table = TRUE)
+summarize_var_removal(df_clim2_num_preds, clim = 2, table = TRUE)
 ```
 
 #### Cor Summary Plot
 
 ```{r}
-plot_removed_cor(wy2_select_variables, df_wy2_num_preds)
+plot_removed_cor(clim2_select_variables, df_clim2_num_preds)
 ```
 
 
@@ -264,18 +264,18 @@ The `mtry` parameter determines the number of variables randomly sampled as cand
 The function below creates a vector of accuracy results of random forests using different values for `mtry`.
 
 ```{r tuning_function}
-df_wy0_reduced <- as.data.frame(df_wy0_reduced)
-df_wy2_reduced <- as.data.frame(df_wy2_reduced)
+df_clim0_reduced <- as.data.frame(df_clim0_reduced)
+df_clim2_reduced <- as.data.frame(df_clim2_reduced)
 ```
 
 Next, we run the function for both climate scenario data sets and visualize the results. Model error here is assessed using out-of-bag (OOB) observations in the data, which refers to observations that were not sampled during bootstrapping for the particular Random Forest being assessed. In other words OOB data were not used to train the model and can be used to test accuracy without the risk of bias incurred from model over-fitting. The best `mtry value` in the plots below will be represented by the lowest `OOB Error`.
 
-```{r tune_rf_wy0, warning = FALSE}
+```{r tune_rf_clim0, warning = FALSE}
 source(here::here("R", "tune_rf_model.R"))
 
 set.seed(4326)
 
-mtry0 <- tune_rf_model(df_wy0_reduced)
+mtry0 <- tune_rf_model(df_clim0_reduced)
 bestmtry0 <- match(min(mtry0), mtry0)
 ggplot(data = as.data.frame(mtry0), aes(x = 1:length(mtry0), y = mtry0)) +
   geom_vline(xintercept = bestmtry0, linetype = "dashed") +
@@ -284,13 +284,13 @@ ggplot(data = as.data.frame(mtry0), aes(x = 1:length(mtry0), y = mtry0)) +
   theme_light() +
   labs(x = "mtry value",
        y = "OOB Error",
-       title = paste0("The best mtry value for ", deparse(substitute(df_wy0_reduced)), " is ", bestmtry0))
+       title = paste0("The best mtry value for ", deparse(substitute(df_clim0_reduced)), " is ", bestmtry0))
 ```
 
-```{r tune_rf_wy2, warning = FALSE}
+```{r tune_rf_clim2, warning = FALSE}
 set.seed(4326)
 
-mtry2 <- tune_rf_model(df_wy2_reduced)
+mtry2 <- tune_rf_model(df_clim2_reduced)
 bestmtry2 <- match(min(mtry2), mtry2)
 ggplot(data = as.data.frame(mtry2), aes(x = 1:length(mtry2), y = mtry2)) +
   geom_vline(xintercept = bestmtry2, linetype = "dashed") +
@@ -299,7 +299,7 @@ ggplot(data = as.data.frame(mtry2), aes(x = 1:length(mtry2), y = mtry2)) +
   theme_light() +
   labs(x = "mtry value",
        y = "OOB Error",
-       title = paste0("The best mtry value for ", deparse(substitute(df_wy2_reduced)), " is ", bestmtry2))
+       title = paste0("The best mtry value for ", deparse(substitute(df_clim2_reduced)), " is ", bestmtry2))
 ```
 
 The best `mtry` value for each data set is used for the respective random forest model below.
@@ -307,8 +307,8 @@ The best `mtry` value for each data set is used for the respective random forest
 ### Random Forest Models
 
 ```{r get_random_forests}
-rf_wy0 <- train(x = df_wy0_reduced %>% select(!response),
-                y = df_wy0_reduced$response,
+rf_clim0 <- train(x = df_clim0_reduced %>% select(!response),
+                y = df_clim0_reduced$response,
                 method = 'rf',
                 .mtry = bestmtry0,
                 ntree = 500,
@@ -318,8 +318,8 @@ rf_wy0 <- train(x = df_wy0_reduced %>% select(!response),
                 keep.inbag = TRUE,  # necessary for permimp
                 trControl = trainControl(method = "none", seed = 4326)) # to use 10-fold cross validation, method = "cv", number = 10
 
-rf_wy2 <- train(x = df_wy2_reduced %>% select(!response),
-                y = df_wy2_reduced$response,
+rf_clim2 <- train(x = df_clim2_reduced %>% select(!response),
+                y = df_clim2_reduced$response,
                 method = 'rf',
                 .mtry = bestmtry2,
                 ntree = 500,
@@ -332,8 +332,8 @@ rf_wy2 <- train(x = df_wy2_reduced %>% select(!response),
 
 ```{r save_rf_models}
 # save models for the Shiny app
-saveRDS(rf_wy0, here::here("data", "rf_wy0.RDS"))
-saveRDS(rf_wy2, here::here("data", "rf_wy2.RDS"))
+saveRDS(rf_clim0, here::here("data", "rf_clim0.RDS"))
+saveRDS(rf_clim2, here::here("data", "rf_clim2.RDS"))
 ```
 
 Assessing feature importance is a complex task with many possible approaches. Tree based models like random forest offer convenient "split-improvement" measures, like mean increase in purity and minimum depth, which are intrinsically derived during model construction. However, these have been shown to be biased towards variables with many categories or large value ranges (Strobl et al. 2007). Despite some of their shortcomings, these importance measures can provide insights are further explored at the end of this document.
@@ -349,11 +349,11 @@ As the primary measure of importance we instead use partial permutation importan
 4. Importance of the permuted variable is deemed to be the mean loss in accuracy when its values were permuted.
 
 ```{r variable_importance}
-imp_wy0 <- varImp(rf_wy0$finalModel, scale = FALSE) %>% 
+imp_wy0 <- varImp(rf_clim0$finalModel, scale = FALSE) %>% 
   rownames_to_column("Variable") %>% 
   mutate(Rank = rank(-Overall))
 
-imp_wy2 <- varImp(rf_wy2$finalModel, scale = FALSE) %>% 
+imp_wy2 <- varImp(rf_clim2$finalModel, scale = FALSE) %>% 
   rownames_to_column("Variable") %>% 
   mutate(Rank = rank(-Overall))
 ```
@@ -375,20 +375,20 @@ The following section provides visualizations and statistics to evaluate the ran
 Calling the random forest shows a summary of the results, including percent variance explained.
 
 ```{r}
-rf_wy0_fit <- round(tail(rf_wy0$finalModel$rsq, 1)*100, 2)
+rf_clim0_fit <- round(tail(rf_clim0$finalModel$rsq, 1)*100, 2)
 
-rf_wy0$finalModel
+rf_clim0$finalModel
 ```
 
-The model for the base climate scenario explained `r rf_wy0_fit`% of variance in NPP.
+The model for the base climate scenario explained `r rf_clim0_fit`% of variance in NPP.
 
 ```{r}
-rf_wy2_fit <- round(tail(rf_wy2$finalModel$rsq, 1)*100, 2)
+rf_clim2_fit <- round(tail(rf_clim2$finalModel$rsq, 1)*100, 2)
 
-rf_wy2$finalModel
+rf_clim2$finalModel
 ```
 
-The model for the +2 degree Celsius climate scenario explained `r rf_wy2_fit`% of variance in NPP.
+The model for the +2 degree Celsius climate scenario explained `r rf_clim2_fit`% of variance in NPP.
 
 
 # Visualize Results
@@ -444,7 +444,7 @@ To run the explainer, just set the `run_explainer` object below to `TRUE`. It wi
 run_explainer <- FALSE
 
 if (run_explainer == TRUE) {
-  randomForestExplainer::explain_forest(rf_wy0, path = here::here("docs", "forest_explained.html"))
+  randomForestExplainer::explain_forest(rf_clim0, path = here::here("docs", "forest_explained.html"))
 }
 ```
 

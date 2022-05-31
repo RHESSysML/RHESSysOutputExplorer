@@ -17,7 +17,7 @@ library(here)
 ## Load Data
 
 ```{r load_data, message = FALSE}
-df <- readRDS(here::here("data", "sageres.RDS")) 
+df_raw <- readRDS(here::here("data", "sageres.RDS")) 
 ```
 
 ## Clean and Aggregate Data
@@ -60,7 +60,7 @@ if (class(response_var) != "character") {
 
 # Check for factors with many categories
 for (column in factor_vars) {
-  num_categories = n_distinct(df[,column])
+  num_categories = n_distinct(df_raw[,column])
   if (num_categories > 50) {
     warning(paste(column, "has", num_categories, "categories, should this column be numeric?"))
   }
@@ -110,7 +110,7 @@ Here is where the categorical variables from the `factor_vars` object (explained
 
 ```{r convert_to_factors}
 # Convert categorical variables to factors
-df[,factor_vars] <- lapply(df[,factor_vars], factor)
+df_raw[,factor_vars] <- lapply(df_raw[,factor_vars], factor)
 
 ```
 
@@ -118,30 +118,30 @@ Next, for our example, there were some changes that needed to be made that may o
 
 ```{r prepare_data}
 # Change aspect and slope from radians to degrees
-df <- df %>% 
+df <- df_raw %>% 
   mutate(aspect = aspect*(180/pi),
          slope = slope*(180/pi))
 
 # Group by chosen columns
-df_wy <- df %>%   
+df <- df %>%   
   group_by(across(all_of(group_cols)))
 
 # Aggregate average temperatures using the aggregate_temp() function defined above.
-df_wy <- aggregate_temp(df_wy, 'season')
+df <- aggregate_temp(df, 'season')
 
 # Create features for peak swe and the peak_swe/precip ratio
-df_wy <- df_wy %>% 
+df <- df %>% 
   mutate(peak_swe = max(swe)) %>%
   mutate(swe_precip_ratio = peak_swe/sum(precip)) %>% 
   summarise_if(is.numeric, mean) %>% 
   ungroup()
 
 # Rename chosen response variable to "response"
-df_wy <- df_wy %>% 
+df <- df %>% 
   rename("response" = response_var)
 
 # Reorder response variables first and remove any unwanted variables
-df_wy <- df_wy %>% 
+df <- df %>% 
   select(response, everything()) %>%
   select(-c(tavg, day, month, year, basinID, hillID, zoneID, patchID))
 ```
@@ -153,12 +153,12 @@ This is an optional split: the `clim` variable could have been left as a column 
 
 ```{r split_data}
 # Create data frame with only climate scenario 0
-df_wy0 <- df_wy %>% 
+df_clim0 <- df %>% 
   filter(clim == 0) %>% 
   select(-c(clim, wy))
 
 # Create data frame with only climate scenario 2
-df_wy2 <- df_wy %>% 
+df_clim2 <- df %>% 
   filter(clim == 2) %>% 
   select(-c(clim, wy))
 ```
@@ -168,21 +168,21 @@ Now, we have two data tables representing the two climate scenarios.
 Along with this workflow, this repo also contains a Shiny App. The Shiny App can be used post-analysis to graph some of the relationships that are identified within this feature selection workflow. Here we'll save the newly aggregated datasets to be automatically exported into the Shiny App.
 
 ```{r}
-# For the final product, this will save the aggregated datasets as csv files that will get overwritten if the user changes the way they preppared their data, or if they use a new dataset. While we are working on this project we will comment this code out so that new files don't get written everytime. If the user wants to save older versions of their aggregated data, they just need to give it a unique name every time they run this code.
+# For the final product, this will save the aggregated datasets as csv files that will get overwritten if the user changes the way they prepared their data, or if they use a new dataset. While we are working on this project we will comment this code out so that new files don't get written everytime. If the user wants to save older versions of their aggregated data, they just need to give it a unique name every time they run this code.
 
 # Create and export dataframes that change the response column name back to the variable itself to be used in the Shiny app.
 
-df_export <- rename(.data = df_wy, !!response_var := response)
-df_export_wy0 <- rename(.data = df_wy0, !!response_var := response)
-df_export_wy2 <- rename(.data = df_wy2, !!response_var := response)
+df_export <- rename(.data = df, !!response_var := response)
+df_export_clim0 <- rename(.data = df_clim0, !!response_var := response)
+df_export_clim2 <- rename(.data = df_clim2, !!response_var := response)
 
 # write.csv(df_export, file = here("shiny", "aggregated_datasets", "df_wy.csv"), row.names = FALSE)
-# write.csv(df_export_wy0, file = here("shiny", "aggregated_datasets", "df_wy0.csv"), row.names = FALSE)
-# write.csv(df_export_wy2, file = here("shiny", "aggregated_datasets", "df_wy2.csv"), row.names = FALSE)
+# write.csv(df_export_clim0, file = here("shiny", "aggregated_datasets", "df_clim0.csv"), row.names = FALSE)
+# write.csv(df_export_clim2, file = here("shiny", "aggregated_datasets", "df_clim2.csv"), row.names = FALSE)
 
-saveRDS(df_export, file = here::here("shiny", "aggregated_datasets", "df_wy.RDS"))
-saveRDS(df_export_wy0, file = here::here("shiny", "aggregated_datasets", "df_wy0.RDS"))
-saveRDS(df_export_wy2, file = here::here("shiny", "aggregated_datasets", "df_wy2.RDS"))
+saveRDS(df_export, file = here::here("shiny", "aggregated_datasets", "df.RDS"))
+saveRDS(df_export_clim0, file = here::here("shiny", "aggregated_datasets", "df_clim0.RDS"))
+saveRDS(df_export_clim2, file = here::here("shiny", "aggregated_datasets", "df_clim2.RDS"))
 ```
 
 ```{r}
