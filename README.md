@@ -1,5 +1,5 @@
 
-<h1 align="center"> RHESSysML </h1>
+<h1 align="center"> RHESSysOutputExplorer </h1>
 
 <h4 align="center"> A comprehensive workflow to determine and visualize variable importance in RHESSys model output. </h4>
 
@@ -32,7 +32,7 @@
 <tr>
 <td>
       
-RHESSysML provides a template and worked example for quickly exploring and identifying interesting variable relationships in RHESSys output data. This workflow is intended for users after the RHESSys model has been run and calibrated. 
+RHESSysOutputExplorer provides a template and worked example for quickly exploring and identifying interesting variable relationships in RHESSys output data. This workflow is intended for users after the RHESSys model has been run and calibrated. 
 
 This repository contains the following directories:    
     
