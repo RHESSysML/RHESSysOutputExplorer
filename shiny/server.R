@@ -255,7 +255,7 @@ server <- function(input, output) {
     pca <- stats::prcomp(plot_data, center = TRUE, scale. = TRUE)
 
     pca.plot <- ggbiplot(pca,
-      groups = pca_data()[, input$pca_group_select],
+      groups = (if (input$pca_group_select != "None") {pca_data()[, input$pca_group_select]} else {NULL}),
       alpha = input$pca_alpha,
       ellipse = input$pca_ellipse
     ) +
@@ -271,36 +271,66 @@ server <- function(input, output) {
   })
 
   output$dist_plot <- renderPlot({
-    ggplot(dist_data(), aes(y = dist_data()[, input$dist_num_select], fill = dist_data()[, input$dist_group_select])) +
-      scale_fill_discrete(name = full_name_units(input$dist_group_select, metadata, units = FALSE)) +
+    dist_plot <- ggplot(dist_data(), aes(y = dist_data()[, input$dist_num_select])) +
       labs(y = full_name_units(input$dist_num_select, metadata)) +
-      theme_light() +
-      geom_boxplot()
+      theme_light()
+    
+    if(input$dist_group_select!="None") { 
+      dist_plot <- dist_plot + 
+        geom_boxplot(aes(fill = dist_data()[, input$dist_group_select])) +
+        scale_fill_discrete(name = full_name_units(input$dist_group_select, metadata, units = FALSE))
+    }
+    else {
+      dist_plot <- dist_plot + 
+        geom_boxplot()
+    }
+    return(dist_plot)
   })
 
   output$dist_hist <- renderPlot({
-    ggplot(dist_data(), aes(x = dist_data()[, input$dist_num_select])) +
+    dist_hist <- ggplot(dist_data(), aes(x = dist_data()[, input$dist_num_select])) +
       geom_histogram() +
       theme_light() +
       labs(
         x = full_name_units(input$dist_num_select, metadata),
         y = "Count"
-      ) +
-      facet_wrap(~ dist_data()[, input$dist_group_select])
+      ) 
+    
+    if(input$dist_group_select!="None") { 
+      dist_hist <- dist_hist + 
+        facet_wrap(~ dist_data()[, input$dist_group_select])
+    }
+    return(dist_hist)
   })
 
   output$dist_table <- DT::renderDataTable({
-    dist_data() %>%
-      group_by(across(input$dist_group_select)) %>%
-      summarise(
-        N. = n(),
-        Min = min(get(input$dist_num_select)),
-        Q1 = quantile(get(input$dist_num_select), 0.25),
-        Median = median(get(input$dist_num_select)),
-        Mean = mean(get(input$dist_num_select)),
-        Q3 = quantile(get(input$dist_num_select), 0.75),
-        Max = max(get(input$dist_num_select))
-      ) %>%
+    if(input$dist_group_select!="None") {
+      dist_table <- dist_data() %>%
+        group_by(across(input$dist_group_select)) %>%
+        summarise(
+          N. = n(),
+          Min = min(get(input$dist_num_select)),
+          Q1 = quantile(get(input$dist_num_select), 0.25),
+          Median = median(get(input$dist_num_select)),
+          Mean = mean(get(input$dist_num_select)),
+          Q3 = quantile(get(input$dist_num_select), 0.75),
+          Max = max(get(input$dist_num_select))
+        )
+    } 
+    else {
+      dist_table <- dist_data() %>%
+        summarise(
+          N. = n(),
+          Min = min(get(input$dist_num_select)),
+          Q1 = quantile(get(input$dist_num_select), 0.25),
+          Median = median(get(input$dist_num_select)),
+          Mean = mean(get(input$dist_num_select)),
+          Q3 = quantile(get(input$dist_num_select), 0.75),
+          Max = max(get(input$dist_num_select))
+        )
+    }
+    
+    dist_table <- dist_table %>% 
       mutate(across(where(is.numeric), round, 6)) %>%
       DT::datatable(options = list(dom = "t"))
   })
@@ -312,11 +342,21 @@ server <- function(input, output) {
   })
 
   ts_plot_data <- reactive({
-    ts_data() %>%
-      filter(wy %in% input$ts_wy_sel[1]:input$ts_wy_sel[2]) %>%
-      group_by(wy, across(input$ts_group_select)) %>%
-      summarize_if(is.numeric, mean) %>%
-      ungroup()
+    if (input$ts_group_select=="None") {
+      ts_data() %>%
+        filter(wy %in% input$ts_wy_sel[1]:input$ts_wy_sel[2]) %>%
+        group_by(wy) %>%
+        summarize_if(is.numeric, mean) %>%
+        ungroup()
+    }
+    else {
+      ts_data() %>%
+        filter(wy %in% input$ts_wy_sel[1]:input$ts_wy_sel[2]) %>%
+        group_by(wy, across(input$ts_group_select)) %>%
+        summarize_if(is.numeric, mean) %>%
+        ungroup()
+    }
+    
   })
 
   output$ts_plot <- renderPlotly({
@@ -324,14 +364,19 @@ server <- function(input, output) {
 
     ts_plot <- ggplot(ts_plot_data, aes(
       x = wy,
-      y = ts_plot_data[, input$ts_num_select],
-      color = ts_plot_data[, input$ts_group_select])
-    ) +
+      y = ts_plot_data[, input$ts_num_select]
+    )) +
       labs(x = "Water Year",
            y = full_name_units(input$ts_num_select, metadata),
            color = full_name_units(input$ts_group_select, metadata, units = FALSE)) +
-      theme_light() +
-      geom_line()
+      theme_light()
+    
+    if(input$ts_group_select!="None") { 
+      ts_plot <- ts_plot + geom_line(aes(color = ts_plot_data[, input$ts_group_select]))
+    }
+    else {
+      ts_plot <- ts_plot + geom_line()
+    }
 
     ts_plotly <- ggplotly(ts_plot)
 

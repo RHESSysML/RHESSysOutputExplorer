@@ -79,11 +79,6 @@ df_clim2_reduced <- df_clim2 %>%
   select(c(rownames(rf_clim2$finalModel$importance)))
 
 
-########## User Inputs ########## 
-
-factor_vars <- c("stratumID", "scen", "topo")
-response_var <- colnames(df[1])
-
 ######### Text for the welcome page ########## 
 
 welcome <- "Welcome to the RHESSys Interpretation App. Use this app to explore your RHESSys output data."
@@ -219,7 +214,7 @@ pca_data_select <- selectInput("pca_data_select",
 
 pca_group_select <- selectInput("pca_group_select",
   label = tags$h4("Select your groups"),
-  choices = c(colnames(df)[sapply(df, is.factor)]),
+  choices = c("None", colnames(df)[sapply(df, is.factor)]),
   multiple = FALSE)
 
 pca_alpha <- sliderInput("pca_alpha",
@@ -245,7 +240,7 @@ dist_data_select <- selectInput("dist_data_select",
 
 dist_group_select <- selectInput("dist_group_select",
   label = tags$h4("Select your groups"),
-  choices = c(colnames(df)[sapply(df, is.factor)]),
+  choices = c("None", colnames(df)[sapply(df, is.factor)]),
   multiple = FALSE
 )
 
@@ -266,7 +261,7 @@ ts_data_select <- selectInput("ts_data_select",
 
 ts_group_select <- selectInput("ts_group_select",
   label = tags$h4("Select your groups"),
-  choices = c(colnames(df)[sapply(df, is.factor)]),
+  choices = c("None", colnames(df)[sapply(df, is.factor)]),
   multiple = FALSE
 )
 
