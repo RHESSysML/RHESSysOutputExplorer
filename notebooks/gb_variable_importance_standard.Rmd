@@ -1,6 +1,6 @@
 ---
 title: "Gradient Boosting Workflow Variation"
-author: "RHESSysML Capstone Group"
+author: "Alex Clippinger, Wylie Hampson, Shale Hunter, Peter Menzies"
 date: "2/5/2022"
 output: 
   rmarkdown::html_document:
