@@ -124,37 +124,37 @@ dataset_sel <- selectInput(
 
 # Visualizations Inputs ---------------------------------------------------
 
-# stratum_sel <- checkboxGroupInput("stratum_sel",
-#   label = tags$h4("Select desired strata to look at:"),
-#   choices = unique(df$stratumID),
-#   selected = unique(df$stratumID)
-# )
-# 
-# topo_sel <- checkboxGroupInput("topo_sel",
-#   label = tags$h4("Select topography types to look at:"),
-#   choices = c(
-#     "Upslope" = "U",
-#     "Mid-slope" = "M",
-#     "Riparian" = "R"
-#   ),
-#   selected = c(
-#     "Upslope" = "U",
-#     "Mid-slope" = "M",
-#     "Riparian" = "R"
-#   )
-# )
-# 
-# clim_sel <- checkboxGroupInput("clim_sel",
-#   label = tags$h4("Select your climate scenario(s):"),
-#   choices = c(
-#     "Normal Scenario" = 0,
-#     "+2 Degree C Scenario" = 2
-#   ),
-#   selected = c(
-#     "Normal Scenario" = 0,
-#     "+2 Degree C Scenario" = 2
-#   )
-# )
+stratum_sel <- checkboxGroupInput("stratum_sel",
+  label = tags$h4("Select desired strata to look at:"),
+  choices = unique(df$stratumID),
+  selected = unique(df$stratumID)
+)
+
+topo_sel <- checkboxGroupInput("topo_sel",
+  label = tags$h4("Select topography types to look at:"),
+  choices = c(
+    "Upslope" = "U",
+    "Mid-slope" = "M",
+    "Riparian" = "R"
+  ),
+  selected = c(
+    "Upslope" = "U",
+    "Mid-slope" = "M",
+    "Riparian" = "R"
+  )
+)
+
+clim_sel <- checkboxGroupInput("clim_sel",
+  label = tags$h4("Select your climate scenario(s):"),
+  choices = c(
+    "Normal Scenario" = 0,
+    "+2 Degree C Scenario" = 2
+  ),
+  selected = c(
+    "Normal Scenario" = 0,
+    "+2 Degree C Scenario" = 2
+  )
+)
 
 wy_sel <- sliderInput("wy_sel",
   label = tags$h4("Select water year range:"),
@@ -223,12 +223,13 @@ partial_dep_var2 <- selectInput("partial_dep_var2",
 pca_data_select <- selectInput("pca_data_select",
   label = tags$h4("Select your dataset"),
   choices = all_datasets,
-  selected = all_datasets[2],
+  selected = all_datasets[1],
   multiple = FALSE)
 
 pca_group_select <- selectInput("pca_group_select",
   label = tags$h4("Select your groups"),
-  choices = c(colnames(df)[sapply(df, is.factor)]),
+  #choices = c(colnames(df)[sapply(df, is.factor)]),
+  choices = c(colnames(df_raw)[sapply(df_raw, is.factor)]),
   multiple = FALSE)
 
 pca_alpha <- sliderInput("pca_alpha",
@@ -248,19 +249,21 @@ pca_ellipse <- checkboxInput("pca_ellipse",
 dist_data_select <- selectInput("dist_data_select",
   label = tags$h4("Select your dataset"),
   choices = all_datasets,
-  selected = all_datasets[2],
+  selected = all_datasets[1],
   multiple = FALSE
 )
 
 dist_group_select <- selectInput("dist_group_select",
   label = tags$h4("Select your groups"),
-  choices = c(colnames(df)[sapply(df, is.factor)]),
+  #choices = c(colnames(df)[sapply(df, is.factor)]),
+  choices = c(colnames(df_raw)[sapply(df_raw, is.factor)]),
   multiple = FALSE
 )
 
 dist_num_select <- selectInput("dist_num_select",
   label = tags$h4("Select numeric variable"),
-  choices = c(colnames(df)[sapply(df, is.numeric)]),
+  #choices = c(colnames(df)[sapply(df, is.numeric)]),
+  choices = c(colnames(df_raw)[sapply(df_raw, is.numeric)]),
   multiple = FALSE
 )
 
@@ -269,27 +272,33 @@ dist_num_select <- selectInput("dist_num_select",
 ts_data_select <- selectInput("ts_data_select",
   label = tags$h4("Select your dataset"),
   choices = all_datasets[1:2],
-  selected = all_datasets[2],
+  #selected = all_datasets[2],
+  selected = all_datasets[1],
   multiple = FALSE
 )
 
 ts_group_select <- selectInput("ts_group_select",
   label = tags$h4("Select your groups"),
-  choices = c(colnames(df)[sapply(df, is.factor)]),
+  #choices = c(colnames(df)[sapply(df, is.factor)]),
+  choices = c(colnames(df_raw)[sapply(df_raw, is.factor)]),
   multiple = FALSE
 )
 
 ts_num_select <- selectInput("ts_num_select",
   label = tags$h4("Select numeric variable"),
-  choices = c(colnames(df)[sapply(df, is.numeric)]),
+  #choices = c(colnames(df)[sapply(df, is.numeric)]),
+  choices = c(colnames(df_raw)[sapply(df_raw, is.numeric)]),
   multiple = FALSE
 )
 
 ts_wy_sel <- sliderInput("ts_wy_sel",
   label = tags$h4("Select water year range:"),
-  min = min(df$wy),
-  max = max(df$wy),
-  value = c(min(df$wy), max(df$wy)),
+  #min = min(df$wy),
+  #max = max(df$wy),
+  #value = c(min(df$wy), max(df$wy)),
+  min = min(df_raw$wy),
+  max = max(df_raw$wy),
+  value = c(min(df_raw$wy), max(df_raw$wy)),
   sep = "",
   step = 1
 )

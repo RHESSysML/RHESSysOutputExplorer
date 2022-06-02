@@ -190,7 +190,7 @@ server <- function(input, output) {
       ) %>%
       select(-quantile)
     
-    names(facet_stats) <- c(paste0("Facet Range - ", 
+    names(facet_stats) <- c(paste0(# "Facet Range - ", 
                                    full_name_units(input$facet_variable, metadata)))
     
     facet_stats %>% 

@@ -72,6 +72,7 @@ for (column in factor_vars) {
   if (num_categories > 50) {
     warning(paste(column, "has", num_categories, "categories, should this column be numeric?"))
   }
+  rm(num_categories, column)
 }
 ```
 
@@ -122,12 +123,24 @@ df_raw[,factor_vars] <- lapply(df_raw[,factor_vars], factor)
 
 ```
 
-Next, for our example, there were some changes that needed to be made that may or may not apply to your dataset. For this example, we are changing `slope` and `aspect` from radians to degrees, aggregating by water year, and adding two derived variables: `peak_swe` and `swe_precip_ratio`. We decided to create columns for `peak_swe` and `swe_precip_ratio` because we thought they would be important variables in determining the response variable in our example, which was net primary productivity. This code chuck is where you add your own derived variables that may be important to your analysis. If you wish to aggregate your data in a way different than in our example, this is also the code chunk to do that in.
+This code chunk is where you add your own derived variables that may be important to your analysis. If you wish to aggregate your data in a way different than in our example, this is also the code chunk to do that in.
+
+Below, we do not create any derived variables, aggregate by water year and basinID, then remove unwanted variables.
 
 ```{r prepare_data}
 # Rename chosen response variable to "response"
 df_raw <- df_raw %>% 
   rename("response" = response_var)
+
+no_var = c()
+for (col in colnames(df_raw)) {
+  if (is.numeric(df_raw[, col])) {
+    if (var(df_raw[, col]) == 0) {
+      no_var <- append(no_var, col)
+    }
+  }
+}
+df_raw <- df_raw %>% select(-all_of(no_var))
 
 # Group by chosen columns
 df <- df_raw %>%   
