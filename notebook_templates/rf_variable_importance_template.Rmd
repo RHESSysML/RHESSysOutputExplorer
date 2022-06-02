@@ -1,0 +1,332 @@
+---
+title: "Variable Importance Template"
+author: "RHESSysML Capstone Group"
+date: "2/5/2022"
+output: 
+  rmarkdown::html_document:
+    toc: true
+    toc_float: true
+    code_folding: show
+    theme: cerulean
+---
+
+# Introduction
+
+[RHESSys](https://github.com/RHESSys/RHESSys/wiki) output provides multiple variables that describe the response of ecosystem biogeochemical cycling and hydrology to climate (and land use) drivers. This R Markdown document describes a workflow to apply machine learning techniques (random forest and gradient boosting) to RHESSys model output. The specific goal is to determine the most important relationships between RHESSys predictor variables and a chosen response variable in a programmatic, efficient, and reproducible manner. permutation importance will be our primary metric for what determines the importance of variables within each machine learning model, but additional metrics will be discussed to help you choose whether random forest or gradient boosting is a more appropriate class of model to use.
+
+If you don’t know what permutation importance is right now, don’t worry! This workflow is written with ecologists in mind, not machine learning engineers or computer scientists. The details of random forest, gradient boosting, and permutation importance will be explained throughout the course of the document.
+
+## Instructions for use:
+
+Use the `data_preparation_template.Rmd` to prepare your data before working through this notebook. It's important to note that this process relies on the specific variable names assigned throughout the workflow and problems will occur if variable names are changed. 
+
+# Setup
+
+## renv:
+
+To help ensure reproducibility, the packages and package versions used to build this workflow have been saved via [`renv`](https://rstudio.github.io/renv/articles/renv.html). To download any missing packages and load the correct versions, run the command `renv::restore()` in the console. Doing so will not impact your package versions outside of this R Project. It may take several minutes depending on the number of discrepancies.
+
+```{r setup, include = TRUE, warning=FALSE, message=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+options(scipen = 999)
+
+# Standard packages
+library(tidyverse)
+library(here)
+library(patchwork)
+library(psych)
+library(kableExtra)
+library(zeallot)
+library(DT)
+
+# Machine Learning packages
+library(caret)
+library(spatialRF)
+library(randomForest)
+library(party)
+library(partykit)
+library(rfUtilities)
+library(randomForestExplainer)
+```
+
+```{r}
+load(here::here("data", "input", "prepared_data.RData"))
+```
+
+
+# Data Description
+
+Next, we want to get a summary description of the data set. This is crucial for many reasons:
+
+1.  Shows early on in the process if any variables do not have the expected range, magnitude, class, etc.
+
+2.  Provides information on data set characteristics that are important for decisions later on in the machine learning process.
+
+Here, we display summary statistics for the base climate scenario data.
+
+```{r describe_data}
+source(here::here("R", "summarize_data.R"))
+
+summarize_data(df)
+```
+
+
+# Remove Multicollinearity
+
+Highly correlated predictor variables are not as much a concern in machine learning when creating a predictive model. However, for this process of assessing relative predictor variable importance, multicollinear variables have biased importance (Strobl et al. 2008). Therefore, these need to be handled prior to assessing feature importance.
+
+## Method
+
+Below, we use Variance Inflation Factors (VIF) and Pearson Correlation Coefficients to remove variables with high multicollinearity. This is done using `auto_vif()` and `auto_cor()` from the `spatialRF` package---these two functions are used in conjunction to best minimize multicollinearity. Both functions allow the user to define an order of preference for the selection of variables, which will be discussed below. If no preference order is decided, the `auto_vif()` function orders the variables from minimum to maximum VIF, and the `auto_cor()` function orders variables by their column order.
+
+The `auto_vif()` function works by initially starting with the variable with highest preference. Then, it iterates through the preference order list, computing the VIF for each new variable added. If the VIF of the new variable is lower than the threshold it is kept, if not the variable is removed. This process is continued until all VIF values are below the user-input threshold.
+
+Similarly, the `auto_cor()` function works by computing a correlation matrix for all variables. Next, it computes the maximum correlation for each variable. The function then begins with the variable with lowest preference. If that variables maximum correlation coefficient is above the user-input threshold, that variable is removed. This process is continued until all correlation values are below the user-input threshold.
+
+## Identify and Remove Correlated Variables
+
+First, we create data frames containing only the predictor variables to assist with the next steps.
+
+```{r get_predictors}
+# Save data frames of predictor variables for first climate scenario
+df_num_preds <- df %>% 
+  select(!response & where(is.numeric))
+
+df_fpreds <- df %>% 
+  select(!response & where(is.factor)) %>% 
+  colnames()
+```
+
+Below, there are two methods for setting preference order: (1) Manually creating an ordered vector of column names, or (2) Allowing a preliminary random forest method to determine preference order based on variable importance. Note that in the preliminary random forest, highly correlated variables will not produce accurate estimates of importance. However, we assume that relative importance is reasonably accurate to support the selection between highly correlated variables. The second method is used by default. 
+
+1. Run this chunk to manually create an ordered vector of column names, starting with those of highest priority / greatest interest. The vector does not need to include the names of all predictors - only those that you would like to keep in the analysis.
+
+```{r manual_preference_order}
+# Preference order can be determined manually for variables of interest:
+
+#pref_order <- c("precip", "rz_storage", "trans", "evap")
+```
+
+2. Run this chunk to allow a preliminary random forest to automatically determine preference order.
+
+```{r auto_preference_order, warning=FALSE}
+# First climate scenario
+
+# Find preliminary importance using random forest
+prelim_imp <- train(x = df %>% select(!response),
+              y = df$response,
+              method = 'rf',
+              importance = TRUE,
+              replace = TRUE,
+              trControl = trainControl(method = "none", seed = 4326))
+
+# Set preference order based on variable importance
+pref_order <- varImp(prelim_imp$finalModel, scale = FALSE) %>% 
+  arrange(-Overall) %>% 
+  rownames()
+```
+
+Thresholds for VIF and correlation can be set below, with default values of 5 and 0.75, respectively. Increasing the thresholds will reduce the number of variables that get removed, but it will increase the likelihood that collinearity influences the results.
+
+```{r set_thresholds}
+vif.threshold = 5
+cor.threshold = 0.8
+```
+
+```{r remove_multicollinearity, warning = FALSE}
+source(here::here("R", "remove_vif.R"))
+source(here::here("R", "remove_cor.R"))
+
+# Removing variables with 0 variance
+no_var <- sapply(df_num_preds, function(col) var(col) == 0)
+df_num_preds <- df_num_preds[, !no_var]
+
+# Identifying variables with correlations or VIF above given thresholds
+vif_cor <- remove_cor(df_num_preds, cor.threshold = cor.threshold, pref_order) %>% 
+  remove_vif(vif.threshold = vif.threshold, pref_order)
+
+select_variables <- vif_cor$selected.variables
+
+# Remove numeric variables with multicollinearity
+df_reduced <- df %>% 
+  select(c(response, all_of(df_fpreds), all_of(select_variables)))
+```
+
+## Summary of Removed Variables
+
+The next step is intended to elucidate the previous multicollinearity reduction process via figures showing which variables were selected and removed, and why. This information can be used to determine whether the auto-generated preference order based on preliminary importance performed satisfactorily, or whether the preference order should be set manually. If, for example, a variable of particular interest was removed, the `manual_preference_order` code chunk above can be used to create a preference order containing the desired variable.
+
+
+```{r summarize_cor_function, class.source='fold-hide'}
+source(here::here("R", "summarize_var_removal.R"))
+source(here::here("R", "plot_removed_cor.R"))
+```
+
+The following functions output summary tables and plots showing variable selection status and the values of VIF, correlation, and importance which led to those selections. 
+
+### Summary Tables {.tabset}
+
+#### Variable Removal Summary Table
+
+```{r vif_summary_table_0, warning=FALSE}
+summarize_var_removal(df_num_preds, table = TRUE)
+```
+
+#### Cor Summary Plot
+
+```{r}
+plot_removed_cor(select_variables, df_num_preds)
+```
+
+# Feature Importance with Random Forest
+
+With multicollinearity reduced, the importance of predictor variables can be estimated using random forest and partial permutation importance. In this framework, we use random forest because it has been shown to be an effective tool in assessing feature importance in numerous applications including ecological analysis (Cutler et al. 2007; Prasad et al. 2006). Additionally, random forest requires relatively less hyper-parameter tuning than other common techniques such as gradient boosting, which is explored in separate workflows. 
+
+### Hyper-Parameter Tuning
+
+An essential part of building a machine learning model is tuning hyper-parameters. This entails altering parameters which the user has control over in order to attain an optimal model accuracy. The following tuning process has been automated and only involves `mtry`---the primary parameter that requires adjustment in a random forest.
+
+The `mtry` parameter determines the number of variables randomly sampled as candidates at each split. The default value for regression is p/3, where p is the number of predictor variables.
+
+The function below creates a vector of accuracy results of random forests using different values for `mtry`.
+
+```{r tuning_function}
+df_reduced <- as.data.frame(df_reduced)
+```
+
+Next, we run the function for both climate scenario data sets and visualize the results. Model error here is assessed using out-of-bag (OOB) observations in the data, which refers to observations that were not sampled during bootstrapping for the particular random forest being assessed. In other words OOB data were not used to train the model and can be used to test accuracy without the risk of bias incurred from model over-fitting. The best `mtry value` in the plots below will be represented by the lowest `OOB Error`.
+
+```{r tune_rf, warning = FALSE}
+source(here::here("R", "tune_rf_model.R"))
+
+set.seed(4326)
+
+mtry <- tune_rf_model(df_reduced)
+bestmtry <- match(min(mtry), mtry)
+ggplot(data = as.data.frame(mtry), aes(x = 1:length(mtry), y = mtry)) +
+  geom_vline(xintercept = bestmtry, linetype = "dashed") +
+  geom_point() +
+  geom_line() +
+  theme_light() +
+  labs(x = "mtry value",
+       y = "OOB Error",
+       title = paste0("The best mtry value for ", deparse(substitute(df_reduced)), " is ", bestmtry))
+```
+
+The best `mtry` value is used random forest model below.
+
+### Random Forest Models
+
+```{r get_random_forests}
+rf <- train(x = df_reduced %>% select(!response),
+                y = df_reduced$response,
+                method = 'rf',
+                .mtry = bestmtry,
+                ntree = 500,
+                importance = TRUE,
+                replace = TRUE,
+                keep.forest = TRUE,  # necessary for permimp
+                keep.inbag = TRUE,  # necessary for permimp
+                trControl = trainControl(method = "none", seed = 4326)) # to use 10-fold cross validation, method = "cv", number = 10
+```
+
+Assessing feature importance is a complex task with many possible approaches. Tree based models like random forest offer convenient "split-improvement" measures, like mean increase in purity and minimum depth, which are intrinsically derived during model construction. However, these have been shown to be biased towards variables with many categories or large value ranges (Strobl et al. 2007). Despite some of their shortcomings, these importance measures can provide insights are further explored at the end of this document.
+
+As the primary measure of importance we instead use partial permutation importance via the `varImp` function. Permutation importance has been tested and determined to be the most unbiased importance metric for data with a mix of categorical and continuous variables with a variety of classes and ranges, respectively. This is calculated in the following steps...
+
+1. Assess prediction accuracy (mean squared error) of the model on the out-of-bag data.
+
+2. Permute the values of a given variable.
+
+3. Feed the dataset with the permuted values into the random forest and reassess model accuracy.
+
+4. Importance of the permuted variable is deemed to be the mean loss in accuracy when its values were permuted. 
+
+```{r variable_importance}
+imp <- varImp(rf$finalModel, scale = FALSE) %>% 
+  rownames_to_column("Variable") %>% 
+  mutate(Rank = rank(-Overall))
+```
+
+
+# Model Evaluation
+
+The following section provides visualizations and statistics to evaluate the random forest performance.
+
+First, simply calling the random forest shows a summary of the results, including percent variance explained.
+
+```{r}
+rf_fit <- round(tail(rf$finalModel$rsq, 1)*100, 2)
+
+rf$finalModel
+```
+
+The above model explained `r rf0_fit`% of variance in the response variable.
+
+
+# Visualize Results
+
+Now, we can visualize the results of the random forest feature selection.
+
+Variable importance plots display relative magnitude of importance between variables.
+
+```{r plot_imp}
+source(here::here("R", "plot_imp.R"))
+
+plot <- plot_imp(imp)
+plot
+```
+
+
+# Further Exploration
+
+## Shiny App
+
+The capstone team created an application with a suite of interactive visualization tools using the `Shiny` package. It can be used to further explore the original data set and the variable importance results from the workflow. The app can be launched below by setting `run_app` below to `TRUE`.
+
+First, the following objects are saved for use in the app.
+
+```{r save_model_output}
+save(rf, imp, file = here::here("data", "output", "model_output_standard.RData"))
+```
+
+```{r}
+run_app <- FALSE
+
+if (run_app == TRUE) {
+  shiny::runApp(here::here("shiny"))
+}
+```
+
+
+## Additional Measures of Importance
+
+While permutation importance was chosen as the primary measure of importance in this workflow, there are other measures that random forests allow for which may be of utility. It's important, however, that the inherent biases previously mentioned (Strobl et al. 2007) are understood. These additional measures will not be described further here, but the function below, `randomForestExplainer::explain_forest()`, is an excellent tool which creates an html document visualizing and comparing a number of them.
+
+To run the explainer, just set the `run_explainer` object below to `TRUE`. It will likely take several minutes to run. The document is set to output to the "docs" folder in the project's root directory, and will be best viewed in your browser.
+
+*Note: the measure of "mse_increase" found in the output document is synonymous with "permutation importance" used in the workflow.*
+
+```{r}
+# Set to false by default due to long run time
+run_explainer <- FALSE
+
+if (run_explainer == TRUE) {
+  randomForestExplainer::explain_forest(rf0, path = here::here("docs", "forest_explained.html"))
+}
+```
+
+
+
+# References
+
+Cutler, D. Richard, Thomas C. Edwards, Karen H. Beard, Adele Cutler, Kyle T. Hess, Jacob Gibson, and Joshua J. Lawler. 2007. "Random Forests for Classification in Ecology." *Ecology* 88 (11): 2783--92. <https://doi.org/10.1890/07-0539.1>.
+
+Debeer, Dries, and Carolin Strobl. 2020. "Conditional Permutation Importance Revisited." *BMC Bioinformatics* 21 (1): 307. <https://doi.org/10.1186/s12859-020-03622-2>.
+
+Prasad, Anantha M., Louis R. Iverson, and Andy Liaw. 2006. "Newer Classification and Regression Tree Techniques: Bagging and Random Forests for Ecological Prediction." *Ecosystems* 9 (2): 181--99. <https://doi.org/10.1007/s10021-005-0054-1>.
+
+Strobl, Carolin, Anne-Laure Boulesteix, Achim Zeileis, and Torsten Hothorn. 2007. "Bias in Random Forest Variable Importance Measures: Illustrations, Sources and a Solution." *BMC Bioinformatics* 8 (1): 25. <https://doi.org/10.1186/1471-2105-8-25>.
+
+Strobl, Carolin, Anne-Laure Boulesteix, Thomas Kneib, Thomas Augustin, and Achim Zeileis. 2008. "Conditional Variable Importance for Random Forests." *BMC Bioinformatics* 9 (1): 307. <https://doi.org/10.1186/1471-2105-9-307>.
