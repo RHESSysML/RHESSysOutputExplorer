@@ -455,7 +455,7 @@ First, the following objects are saved for use in the app.
 save(imp_gb0, imp_gb2, file = here::here("data", "output", "gb_model_output.RData"))
 ```
 
-Run the following code chunk to launch the Shiny app:
+Run the following code chunk to launch the Shiny app (note you will have to set `run_app` to TRUE):
 
 ```{r}
 run_app <- FALSE

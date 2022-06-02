@@ -116,7 +116,7 @@ Below, there are two methods for setting preference order: (1) Manually creating
 ```{r auto_preference_order, warning=FALSE}
 
 # Find preliminary importance using random forest
-imp <- train(x = df %>% select(!response),
+prelim_imp <- train(x = df %>% select(!response),
               y = df$response,
               method = 'rf',
               importance = TRUE,
@@ -124,7 +124,7 @@ imp <- train(x = df %>% select(!response),
               trControl = trainControl(method = "none", seed = 4326))
 
 # Set preference order based on variable importance
-pref_order <- varImp(imp$finalModel, scale = FALSE) %>% 
+pref_order <- varImp(prelim_imp$finalModel, scale = FALSE) %>% 
   arrange(-Overall) %>% 
   rownames()
 ```
@@ -326,6 +326,8 @@ First, the following objects are saved for use in the app.
 ```{r save_model_output}
 save(imp_gb, file = here::here("data", "output", "gb_model_output_standard.RData"))
 ```
+
+Run the following code chunk to launch the Shiny app (note you will have to set `run_app` to TRUE):
 
 ```{r}
 run_app <- FALSE
