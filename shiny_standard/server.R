@@ -15,15 +15,6 @@ server <- function(input, output) {
   })
 
   # Dataset Viewer ----------------------------------------------------------
-
-  # data_display <- reactive({
-  #   switch(input$dataset_sel,
-  #     "Raw Data" = df_raw,
-  #     "Aggregated Data" = df,
-  #     "Aggregated Data (Normal Climate)" = df_clim0,
-  #     "Aggregated Data (+2 Degree C Climate)" = df_clim2
-  #   )
-  # })
   
   data_display <- reactive({
     data_display <- get(input$dataset_sel)
@@ -41,19 +32,12 @@ server <- function(input, output) {
 
   # Variable Importance -----------------------------------------------------
 
-  # output$imp_plot <- renderPlot({
-  #   plot_imp(imp_clim0) + plot_imp(imp_clim2)
-  # })
-  # 
-  # output$imp_table <- function() {
-  #   df_imp_table(imp_clim0, imp_clim2)
-  # }
   output$imp_plot <- renderPlot({
     plot_imp(imp)
   })
   
   output$imp_table <- function() {
-    df_imp_table(imp)
+    table_imp(imp)
   }
 
   # Visualizations ----------------------------------------------------------
@@ -115,7 +99,6 @@ server <- function(input, output) {
       x = !!input$independent_variable,
       y = df_wy_reactive()[, response_var]
     )) +
-      #geom_point(aes(color = clim), size = 0.75) +
       geom_point(size = 0.75) +
       geom_smooth(se = FALSE, method = lm, color = "#B251F1", size = 0.75) +
       scale_color_manual(values = c(
@@ -200,55 +183,10 @@ server <- function(input, output) {
 
   # Partial Dependence ------------------------------------------------------
 
-  # Update select inputs based on the model choice
-  # observe({
-  #   x <- input$partial_dep_model
-  # 
-  #   if (x == "Normal Scenario") {
-  #     cols <- colnames(df_clim0_reduced %>% select(where(is.numeric)))
-  #   } else if (x == "+2 Degree C Scenario") {
-  #     cols <- colnames(df_clim2_reduced %>% select(where(is.numeric)))
-  #   }
-  # 
-  #   updateSelectInput(
-  #     session = getDefaultReactiveDomain(),
-  #     "partial_dep_var1",
-  #     choices = cols,
-  #     selected = cols[1]
-  #   )
-  # 
-  #   updateSelectInput(
-  #     session = getDefaultReactiveDomain(),
-  #     "partial_dep_var2",
-  #     choices = cols,
-  #     selected = cols[2]
-  #   )
-  # })
-  # 
-  # # Get correct RF model based on input
-  # partial_dep_model_obj <- reactive({
-  #   if (input$partial_dep_model == "Normal Scenario") {
-  #     rf_clim0$finalModel
-  #   } else if (input$partial_dep_model == "+2 Degree C Scenario") {
-  #     rf_clim2$finalModel
-  #   }
-  # })
-  # 
-  # # Get correct predictor data frame based on input
-  # partial_dep_data <- reactive({
-  #   if (input$partial_dep_model == "Normal Scenario") {
-  #     df_clim0_reduced
-  #   } else if (input$partial_dep_model == "+2 Degree C Scenario") {
-  #     df_clim2_reduced
-  #   }
-  # })
-
   # Create 3D partial dependence plot
   output$partial_dep_plot <- renderPlotly({
     plotly_partial_dependence(
-      #x = partial_dep_model_obj(),
       x = rf$finalModel,
-      #pred.data = partial_dep_data(),
       pred.data = df_reduced,
       v1 = input$partial_dep_var1,
       v2 = input$partial_dep_var2,
@@ -267,9 +205,9 @@ server <- function(input, output) {
       select(where(is.numeric))
 
     pca <- stats::prcomp(plot_data, center = TRUE, scale. = TRUE)
-
+  
     pca.plot <- ggbiplot(pca,
-      groups = pca_data()[, input$pca_group_select],
+      groups = (if (input$pca_group_select != "None") {pca_data()[, input$pca_group_select]} else {NULL}),
       alpha = input$pca_alpha,
       ellipse = input$pca_ellipse
     ) +
@@ -285,52 +223,88 @@ server <- function(input, output) {
   })
 
   output$dist_plot <- renderPlot({
-    ggplot(dist_data(), aes(y = dist_data()[, input$dist_num_select], fill = dist_data()[, input$dist_group_select])) +
-      scale_fill_discrete(name = full_name_units(input$dist_group_select, metadata, units = FALSE)) +
+    dist_plot <- ggplot(dist_data(), aes(y = dist_data()[, input$dist_num_select])) +
       labs(y = full_name_units(input$dist_num_select, metadata)) +
-      theme_light() +
-      geom_boxplot()
+      theme_light()
+    
+    if(input$dist_group_select!="None") { 
+      dist_plot <- dist_plot + 
+        geom_boxplot(aes(fill = dist_data()[, input$dist_group_select])) +
+        scale_fill_discrete(name = full_name_units(input$dist_group_select, metadata, units = FALSE))
+    }
+    else {
+      dist_plot <- dist_plot + 
+        geom_boxplot()
+    }
+    return(dist_plot)
+    
   })
 
   output$dist_hist <- renderPlot({
-    ggplot(dist_data(), aes(x = dist_data()[, input$dist_num_select])) +
+    dist_hist <- ggplot(dist_data(), aes(x = dist_data()[, input$dist_num_select])) +
       geom_histogram() +
       theme_light() +
       labs(
         x = full_name_units(input$dist_num_select, metadata),
         y = "Count"
-      ) +
-      facet_wrap(~ dist_data()[, input$dist_group_select])
+      ) 
+    
+    if(input$dist_group_select!="None") { 
+      dist_hist <- dist_hist + 
+        facet_wrap(~ dist_data()[, input$dist_group_select])
+    }
+    return(dist_hist)
   })
 
   output$dist_table <- DT::renderDataTable({
-    dist_data() %>%
-      group_by(across(input$dist_group_select)) %>%
-      summarise(
-        N. = n(),
-        Min = min(get(input$dist_num_select)),
-        Q1 = quantile(get(input$dist_num_select), 0.25),
-        Median = median(get(input$dist_num_select)),
-        Mean = mean(get(input$dist_num_select)),
-        Q3 = quantile(get(input$dist_num_select), 0.75),
-        Max = max(get(input$dist_num_select))
-      ) %>%
+    if(input$dist_group_select!="None") {
+      dist_table <- dist_data() %>%
+        group_by(across(input$dist_group_select)) %>%
+        summarise(
+          N. = n(),
+          Min = min(get(input$dist_num_select)),
+          Q1 = quantile(get(input$dist_num_select), 0.25),
+          Median = median(get(input$dist_num_select)),
+          Mean = mean(get(input$dist_num_select)),
+          Q3 = quantile(get(input$dist_num_select), 0.75),
+          Max = max(get(input$dist_num_select))
+        )
+    } 
+    else {
+      dist_table <- dist_data() %>%
+        summarise(
+          N. = n(),
+          Min = min(get(input$dist_num_select)),
+          Q1 = quantile(get(input$dist_num_select), 0.25),
+          Median = median(get(input$dist_num_select)),
+          Mean = mean(get(input$dist_num_select)),
+          Q3 = quantile(get(input$dist_num_select), 0.75),
+          Max = max(get(input$dist_num_select))
+        )
+    }
+    
+    dist_table <- dist_table %>% 
       mutate(across(where(is.numeric), round, 6)) %>%
       DT::datatable(options = list(dom = "t"))
   })
 
   # Time Series Plots -------------------------------------------------------
 
-  ts_data <- reactive({
-    ts_data <- get(input$ts_data_select)
-  })
-
   ts_plot_data <- reactive({
-    ts_data() %>%
-      filter(wy %in% input$ts_wy_sel[1]:input$ts_wy_sel[2]) %>%
-      group_by(wy, across(input$ts_group_select)) %>%
-      summarize_if(is.numeric, mean) %>%
-      ungroup()
+    if (input$ts_group_select=="None") {
+      df_raw %>%
+        filter(wy %in% input$ts_wy_sel[1]:input$ts_wy_sel[2]) %>%
+        group_by(wy) %>%
+        summarize_if(is.numeric, mean) %>%
+        ungroup()
+    }
+    else {
+      df_raw %>%
+        filter(wy %in% input$ts_wy_sel[1]:input$ts_wy_sel[2]) %>%
+        group_by(wy, across(input$ts_group_select)) %>%
+        summarize_if(is.numeric, mean) %>%
+        ungroup()
+    }
   })
 
   output$ts_plot <- renderPlotly({
@@ -338,14 +312,20 @@ server <- function(input, output) {
 
     ts_plot <- ggplot(ts_plot_data, aes(
       x = wy,
-      y = ts_plot_data[, input$ts_num_select],
-      color = ts_plot_data[, input$ts_group_select])
+      y = ts_plot_data[, input$ts_num_select])
     ) +
       labs(x = "Water Year",
            y = full_name_units(input$ts_num_select, metadata),
            color = full_name_units(input$ts_group_select, metadata, units = FALSE)) +
-      theme_light() +
-      geom_line()
+      theme_light()
+    
+    if(input$ts_group_select!="None") { 
+      ts_plot <- ts_plot + geom_line(aes(color = ts_plot_data[, input$ts_group_select]))
+    }
+    else {
+      ts_plot <- ts_plot + geom_line()
+    }
+    
 
     ts_plotly <- ggplotly(ts_plot)
 

@@ -116,7 +116,6 @@ ui <- fluidPage(
         tabPanel(
           "Partial Dependence",
           sidebarPanel(
-            partial_dep_model,
             partial_dep_var1,
             partial_dep_var2
           ),
@@ -134,7 +133,6 @@ ui <- fluidPage(
         tabPanel(
           "Time Series",
           sidebarPanel(
-            ts_data_select,
             ts_num_select,
             ts_group_select,
             ts_wy_sel
