@@ -239,7 +239,7 @@ plot_removed_cor(clim0_select_variables, df_clim0_num_preds)
 #### Variable Removal Summary Table
 
 ```{r vif_summary_table_2, warning=FALSE}
-summarize_var_removal(df_clim2_num_preds, clim = 2, table = TRUE)
+summarize_var_removal(df_clim2, clim2_select_variables, prelim_imp_clim2, table = TRUE)
 ```
 
 #### Cor Summary Plot
