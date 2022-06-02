@@ -16,13 +16,17 @@ server <- function(input, output) {
 
   # Dataset Viewer ----------------------------------------------------------
 
+  # data_display <- reactive({
+  #   switch(input$dataset_sel,
+  #     "Raw Data" = df_raw,
+  #     "Aggregated Data" = df,
+  #     "Aggregated Data (Normal Climate)" = df_clim0,
+  #     "Aggregated Data (+2 Degree C Climate)" = df_clim2
+  #   )
+  # })
+  
   data_display <- reactive({
-    switch(input$dataset_sel,
-      "Raw Data" = df_raw,
-      "Aggregated Data" = df,
-      "Aggregated Data (Normal Climate)" = df_clim0,
-      "Aggregated Data (+2 Degree C Climate)" = df_clim2
-    )
+    data_display <- get(input$dataset_sel)
   })
 
   output$datatable_viewer <- DT::renderDataTable({
@@ -37,12 +41,19 @@ server <- function(input, output) {
 
   # Variable Importance -----------------------------------------------------
 
+  # output$imp_plot <- renderPlot({
+  #   plot_imp(imp_clim0) + plot_imp(imp_clim2)
+  # })
+  # 
+  # output$imp_table <- function() {
+  #   df_imp_table(imp_clim0, imp_clim2)
+  # }
   output$imp_plot <- renderPlot({
-    plot_imp(imp_clim0) + plot_imp(imp_clim2)
+    plot_imp(imp)
   })
-
+  
   output$imp_table <- function() {
-    df_imp_table(imp_clim0, imp_clim2)
+    df_imp_table(imp)
   }
 
   # Visualizations ----------------------------------------------------------
@@ -104,7 +115,8 @@ server <- function(input, output) {
       x = !!input$independent_variable,
       y = df_wy_reactive()[, response_var]
     )) +
-      geom_point(aes(color = clim), size = 0.75) +
+      #geom_point(aes(color = clim), size = 0.75) +
+      geom_point(size = 0.75) +
       geom_smooth(se = FALSE, method = lm, color = "#B251F1", size = 0.75) +
       scale_color_manual(values = c(
         "0" = "#FEA346",
@@ -189,53 +201,55 @@ server <- function(input, output) {
   # Partial Dependence ------------------------------------------------------
 
   # Update select inputs based on the model choice
-  observe({
-    x <- input$partial_dep_model
-
-    if (x == "Normal Scenario") {
-      cols <- colnames(df_clim0_reduced %>% select(where(is.numeric)))
-    } else if (x == "+2 Degree C Scenario") {
-      cols <- colnames(df_clim2_reduced %>% select(where(is.numeric)))
-    }
-
-    updateSelectInput(
-      session = getDefaultReactiveDomain(),
-      "partial_dep_var1",
-      choices = cols,
-      selected = cols[1]
-    )
-
-    updateSelectInput(
-      session = getDefaultReactiveDomain(),
-      "partial_dep_var2",
-      choices = cols,
-      selected = cols[2]
-    )
-  })
-
-  # Get correct RF model based on input
-  partial_dep_model_obj <- reactive({
-    if (input$partial_dep_model == "Normal Scenario") {
-      rf_clim0$finalModel
-    } else if (input$partial_dep_model == "+2 Degree C Scenario") {
-      rf_clim2$finalModel
-    }
-  })
-
-  # Get correct predictor data frame based on input
-  partial_dep_data <- reactive({
-    if (input$partial_dep_model == "Normal Scenario") {
-      df_clim0_reduced
-    } else if (input$partial_dep_model == "+2 Degree C Scenario") {
-      df_clim2_reduced
-    }
-  })
+  # observe({
+  #   x <- input$partial_dep_model
+  # 
+  #   if (x == "Normal Scenario") {
+  #     cols <- colnames(df_clim0_reduced %>% select(where(is.numeric)))
+  #   } else if (x == "+2 Degree C Scenario") {
+  #     cols <- colnames(df_clim2_reduced %>% select(where(is.numeric)))
+  #   }
+  # 
+  #   updateSelectInput(
+  #     session = getDefaultReactiveDomain(),
+  #     "partial_dep_var1",
+  #     choices = cols,
+  #     selected = cols[1]
+  #   )
+  # 
+  #   updateSelectInput(
+  #     session = getDefaultReactiveDomain(),
+  #     "partial_dep_var2",
+  #     choices = cols,
+  #     selected = cols[2]
+  #   )
+  # })
+  # 
+  # # Get correct RF model based on input
+  # partial_dep_model_obj <- reactive({
+  #   if (input$partial_dep_model == "Normal Scenario") {
+  #     rf_clim0$finalModel
+  #   } else if (input$partial_dep_model == "+2 Degree C Scenario") {
+  #     rf_clim2$finalModel
+  #   }
+  # })
+  # 
+  # # Get correct predictor data frame based on input
+  # partial_dep_data <- reactive({
+  #   if (input$partial_dep_model == "Normal Scenario") {
+  #     df_clim0_reduced
+  #   } else if (input$partial_dep_model == "+2 Degree C Scenario") {
+  #     df_clim2_reduced
+  #   }
+  # })
 
   # Create 3D partial dependence plot
   output$partial_dep_plot <- renderPlotly({
     plotly_partial_dependence(
-      x = partial_dep_model_obj(),
-      pred.data = partial_dep_data(),
+      #x = partial_dep_model_obj(),
+      x = rf$finalModel,
+      #pred.data = partial_dep_data(),
+      pred.data = df_reduced,
       v1 = input$partial_dep_var1,
       v2 = input$partial_dep_var2,
       grid.size = 15

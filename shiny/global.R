@@ -40,8 +40,8 @@ setwd(here::here())
 
 # Datasets and Variable Importance Results --------------------------------
 
-load(here::here("data", "input", "prepared_data.RData"))
-load(here::here("data", "output", "model_output.RData"))
+load(here::here("data", "input", "prepared_data_standard.RData"))
+load(here::here("data", "output", "model_output_standard.RData"))
 
 # Rename response columns
 df_raw <- df_raw %>% 
@@ -52,16 +52,17 @@ df <- df %>%
   rename(!!response_var := response) %>% 
   as.data.frame()
 
-df_clim0 <- df_clim0 %>% 
-  rename(!!response_var := response) %>% 
-  as.data.frame()
+# df_clim0 <- df_clim0 %>% 
+#   rename(!!response_var := response) %>% 
+#   as.data.frame()
 
-df_clim2 <- df_clim2 %>% 
-  rename(!!response_var := response) %>% 
-  as.data.frame()
+# df_clim2 <- df_clim2 %>% 
+#   rename(!!response_var := response) %>% 
+#   as.data.frame()
 
 # Create list of datasets for certain inputs
-all_datasets <- c("df_raw", "df", "df_clim0", "df_clim2")
+#all_datasets <- c("df_raw", "df", "df_clim0", "df_clim2")
+all_datasets <- c("df_raw", "df")
 
 # Metadata Table ----------------------------------------------------------
 
@@ -72,17 +73,20 @@ metadata <- readRDS(here::here("shiny", "metadata.RDS")) %>%
 # Partial Dependence Plot Data --------------------------------------------
 
 # Create reduced data frames from the random forest models
-df_clim0_reduced <- df_clim0 %>%
-  select(c(rownames(rf_clim0$finalModel$importance)))
+# df_clim0_reduced <- df_clim0 %>%
+#   select(c(rownames(rf_clim0$finalModel$importance)))
+# 
+# df_clim2_reduced <- df_clim2 %>%
+#   select(c(rownames(rf_clim2$finalModel$importance)))
 
-df_clim2_reduced <- df_clim2 %>%
-  select(c(rownames(rf_clim2$finalModel$importance)))
+df_reduced <- df %>% 
+  select(c(rownames(rf$finalModel$importance)))
 
 
 ########## User Inputs ########## 
 
-factor_vars <- c("stratumID", "scen", "topo")
-response_var <- colnames(df[1])
+#factor_vars <- c("stratumID", "scen", "topo")
+#response_var <- colnames(df[1])
 
 ######### Text for the welcome page ########## 
 
@@ -108,48 +112,49 @@ importance_caption <- paste0("The above graphs uses the random forest workflow t
 dataset_sel <- selectInput(
   inputId = "dataset_sel",
   label = tags$h4("Select your dataset to view:"),
-  choices = c(
-    "Raw Data",
-    "Aggregated Data",
-    "Aggregated Data (Normal Climate)",
-    "Aggregated Data (+2 Degree C Climate)"
-  ),
-  selected = "Aggregated Data"
+  # choices = c(
+  #   "Raw Data",
+  #   "Aggregated Data",
+  #   "Aggregated Data (Normal Climate)",
+  #   "Aggregated Data (+2 Degree C Climate)"
+  # ),
+  # selected = "Aggregated Data"
+  choices = c(all_datasets)
 )
 
 # Visualizations Inputs ---------------------------------------------------
 
-stratum_sel <- checkboxGroupInput("stratum_sel",
-  label = tags$h4("Select desired strata to look at:"),
-  choices = unique(df$stratumID),
-  selected = unique(df$stratumID)
-)
-
-topo_sel <- checkboxGroupInput("topo_sel",
-  label = tags$h4("Select topography types to look at:"),
-  choices = c(
-    "Upslope" = "U",
-    "Mid-slope" = "M",
-    "Riparian" = "R"
-  ),
-  selected = c(
-    "Upslope" = "U",
-    "Mid-slope" = "M",
-    "Riparian" = "R"
-  )
-)
-
-clim_sel <- checkboxGroupInput("clim_sel",
-  label = tags$h4("Select your climate scenario(s):"),
-  choices = c(
-    "Normal Scenario" = 0,
-    "+2 Degree C Scenario" = 2
-  ),
-  selected = c(
-    "Normal Scenario" = 0,
-    "+2 Degree C Scenario" = 2
-  )
-)
+# stratum_sel <- checkboxGroupInput("stratum_sel",
+#   label = tags$h4("Select desired strata to look at:"),
+#   choices = unique(df$stratumID),
+#   selected = unique(df$stratumID)
+# )
+# 
+# topo_sel <- checkboxGroupInput("topo_sel",
+#   label = tags$h4("Select topography types to look at:"),
+#   choices = c(
+#     "Upslope" = "U",
+#     "Mid-slope" = "M",
+#     "Riparian" = "R"
+#   ),
+#   selected = c(
+#     "Upslope" = "U",
+#     "Mid-slope" = "M",
+#     "Riparian" = "R"
+#   )
+# )
+# 
+# clim_sel <- checkboxGroupInput("clim_sel",
+#   label = tags$h4("Select your climate scenario(s):"),
+#   choices = c(
+#     "Normal Scenario" = 0,
+#     "+2 Degree C Scenario" = 2
+#   ),
+#   selected = c(
+#     "Normal Scenario" = 0,
+#     "+2 Degree C Scenario" = 2
+#   )
+# )
 
 wy_sel <- sliderInput("wy_sel",
   label = tags$h4("Select water year range:"),
@@ -192,20 +197,24 @@ quantile_slider <- sliderInput("quantile_sel",
 
 partial_dep_model <- selectInput("partial_dep_model",
   label = tags$h4("Select your model"),
-  choices = c("Normal Scenario", "+2 Degree C Scenario"),
-  selected = "Normal Scenario",
+  # choices = c("Normal Scenario", "+2 Degree C Scenario"),
+  # selected = "Normal Scenario",
+  choices = all_datasets[2],
+  selected = all_datasets[2],
   multiple = FALSE
 )
 
 partial_dep_var1 <- selectInput("partial_dep_var1",
   label = tags$h4("Select Variable 1"),
-  choices = colnames(df_clim0_reduced),
+  #choices = colnames(df_clim0_reduced),
+  choices = colnames(df_reduced),
   multiple = FALSE
 )
 
 partial_dep_var2 <- selectInput("partial_dep_var2",
   label = tags$h4("Select Variable 2"),
-  choices = colnames(df_clim0_reduced),
+  #choices = colnames(df_clim0_reduced),
+  choices = colnames(df_reduced),
   multiple = FALSE
 )
 
