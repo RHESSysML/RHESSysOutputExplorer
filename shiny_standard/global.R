@@ -40,8 +40,8 @@ setwd(here::here())
 
 # Datasets and Variable Importance Results --------------------------------
 
-load(here::here("data", "input", "prepared_data.RData"))
-load(here::here("data", "output", "model_output.RData"))
+load(here::here("data", "input", "prepared_data_standard.RData"))
+load(here::here("data", "output", "model_output_standard.RData"))
 
 # Rename response columns
 df_raw <- df_raw %>% 
@@ -52,16 +52,17 @@ df <- df %>%
   rename(!!response_var := response) %>% 
   as.data.frame()
 
-df_clim0 <- df_clim0 %>% 
-  rename(!!response_var := response) %>% 
-  as.data.frame()
+# df_clim0 <- df_clim0 %>% 
+#   rename(!!response_var := response) %>% 
+#   as.data.frame()
 
-df_clim2 <- df_clim2 %>% 
-  rename(!!response_var := response) %>% 
-  as.data.frame()
+# df_clim2 <- df_clim2 %>% 
+#   rename(!!response_var := response) %>% 
+#   as.data.frame()
 
 # Create list of datasets for certain inputs
-all_datasets <- c("df_raw", "df", "df_clim0", "df_clim2")
+#all_datasets <- c("df_raw", "df", "df_clim0", "df_clim2")
+all_datasets <- c("df_raw", "df")
 
 # Metadata Table ----------------------------------------------------------
 
@@ -72,17 +73,20 @@ metadata <- readRDS(here::here("shiny", "metadata.RDS")) %>%
 # Partial Dependence Plot Data --------------------------------------------
 
 # Create reduced data frames from the random forest models
-df_clim0_reduced <- df_clim0 %>%
-  select(c(rownames(rf_clim0$finalModel$importance)))
+# df_clim0_reduced <- df_clim0 %>%
+#   select(c(rownames(rf_clim0$finalModel$importance)))
+# 
+# df_clim2_reduced <- df_clim2 %>%
+#   select(c(rownames(rf_clim2$finalModel$importance)))
 
-df_clim2_reduced <- df_clim2 %>%
-  select(c(rownames(rf_clim2$finalModel$importance)))
+df_reduced <- df %>% 
+  select(c(rownames(rf$finalModel$importance)))
 
 
 ########## User Inputs ########## 
 
-factor_vars <- c("stratumID", "scen", "topo")
-response_var <- colnames(df[1])
+#factor_vars <- c("stratumID", "scen", "topo")
+#response_var <- colnames(df[1])
 
 ######### Text for the welcome page ########## 
 
@@ -108,13 +112,14 @@ importance_caption <- paste0("The above graphs uses the random forest workflow t
 dataset_sel <- selectInput(
   inputId = "dataset_sel",
   label = tags$h4("Select your dataset to view:"),
-  choices = c(
-    "Raw Data",
-    "Aggregated Data",
-    "Aggregated Data (Normal Climate)",
-    "Aggregated Data (+2 Degree C Climate)"
-  ),
-  selected = "Aggregated Data"
+  # choices = c(
+  #   "Raw Data",
+  #   "Aggregated Data",
+  #   "Aggregated Data (Normal Climate)",
+  #   "Aggregated Data (+2 Degree C Climate)"
+  # ),
+  # selected = "Aggregated Data"
+  choices = c(all_datasets)
 )
 
 # Visualizations Inputs ---------------------------------------------------
@@ -192,20 +197,24 @@ quantile_slider <- sliderInput("quantile_sel",
 
 partial_dep_model <- selectInput("partial_dep_model",
   label = tags$h4("Select your model"),
-  choices = c("Normal Scenario", "+2 Degree C Scenario"),
-  selected = "Normal Scenario",
+  # choices = c("Normal Scenario", "+2 Degree C Scenario"),
+  # selected = "Normal Scenario",
+  choices = all_datasets[2],
+  selected = all_datasets[2],
   multiple = FALSE
 )
 
 partial_dep_var1 <- selectInput("partial_dep_var1",
   label = tags$h4("Select Variable 1"),
-  choices = colnames(df_clim0_reduced),
+  #choices = colnames(df_clim0_reduced),
+  choices = colnames(df_reduced),
   multiple = FALSE
 )
 
 partial_dep_var2 <- selectInput("partial_dep_var2",
   label = tags$h4("Select Variable 2"),
-  choices = colnames(df_clim0_reduced),
+  #choices = colnames(df_clim0_reduced),
+  choices = colnames(df_reduced),
   multiple = FALSE
 )
 
@@ -214,12 +223,13 @@ partial_dep_var2 <- selectInput("partial_dep_var2",
 pca_data_select <- selectInput("pca_data_select",
   label = tags$h4("Select your dataset"),
   choices = all_datasets,
-  selected = all_datasets[2],
+  selected = all_datasets[1],
   multiple = FALSE)
 
 pca_group_select <- selectInput("pca_group_select",
   label = tags$h4("Select your groups"),
-  choices = c(colnames(df)[sapply(df, is.factor)]),
+  #choices = c(colnames(df)[sapply(df, is.factor)]),
+  choices = c(colnames(df_raw)[sapply(df_raw, is.factor)]),
   multiple = FALSE)
 
 pca_alpha <- sliderInput("pca_alpha",
@@ -239,19 +249,21 @@ pca_ellipse <- checkboxInput("pca_ellipse",
 dist_data_select <- selectInput("dist_data_select",
   label = tags$h4("Select your dataset"),
   choices = all_datasets,
-  selected = all_datasets[2],
+  selected = all_datasets[1],
   multiple = FALSE
 )
 
 dist_group_select <- selectInput("dist_group_select",
   label = tags$h4("Select your groups"),
-  choices = c(colnames(df)[sapply(df, is.factor)]),
+  #choices = c(colnames(df)[sapply(df, is.factor)]),
+  choices = c(colnames(df_raw)[sapply(df_raw, is.factor)]),
   multiple = FALSE
 )
 
 dist_num_select <- selectInput("dist_num_select",
   label = tags$h4("Select numeric variable"),
-  choices = c(colnames(df)[sapply(df, is.numeric)]),
+  #choices = c(colnames(df)[sapply(df, is.numeric)]),
+  choices = c(colnames(df_raw)[sapply(df_raw, is.numeric)]),
   multiple = FALSE
 )
 
@@ -260,27 +272,33 @@ dist_num_select <- selectInput("dist_num_select",
 ts_data_select <- selectInput("ts_data_select",
   label = tags$h4("Select your dataset"),
   choices = all_datasets[1:2],
-  selected = all_datasets[2],
+  #selected = all_datasets[2],
+  selected = all_datasets[1],
   multiple = FALSE
 )
 
 ts_group_select <- selectInput("ts_group_select",
   label = tags$h4("Select your groups"),
-  choices = c(colnames(df)[sapply(df, is.factor)]),
+  #choices = c(colnames(df)[sapply(df, is.factor)]),
+  choices = c(colnames(df_raw)[sapply(df_raw, is.factor)]),
   multiple = FALSE
 )
 
 ts_num_select <- selectInput("ts_num_select",
   label = tags$h4("Select numeric variable"),
-  choices = c(colnames(df)[sapply(df, is.numeric)]),
+  #choices = c(colnames(df)[sapply(df, is.numeric)]),
+  choices = c(colnames(df_raw)[sapply(df_raw, is.numeric)]),
   multiple = FALSE
 )
 
 ts_wy_sel <- sliderInput("ts_wy_sel",
   label = tags$h4("Select water year range:"),
-  min = min(df$wy),
-  max = max(df$wy),
-  value = c(min(df$wy), max(df$wy)),
+  #min = min(df$wy),
+  #max = max(df$wy),
+  #value = c(min(df$wy), max(df$wy)),
+  min = min(df_raw$wy),
+  max = max(df_raw$wy),
+  value = c(min(df_raw$wy), max(df_raw$wy)),
   sep = "",
   step = 1
 )
