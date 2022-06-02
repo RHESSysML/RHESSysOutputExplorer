@@ -395,10 +395,10 @@ This same information is plotted below. The variable importance plots also revea
 ```{r plot_imp}
 source(here::here("R", "plot_imp.R"))
 
-wy0_plot <- plot_imp(imp_clim0)
-wy2_plot <- plot_imp(imp_clim2)
+clim0_plot <- plot_imp(imp_clim0)
+clim2_plot <- plot_imp(imp_clim2)
 
-wy0_plot + wy2_plot 
+clim0_plot + clim2_plot 
 ```
 
 # Further Exploration
