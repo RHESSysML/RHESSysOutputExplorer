@@ -247,6 +247,19 @@ server <- function(input, output) {
   pca_data <- reactive({
     pca_data <- get(input$pca_data_select)
   })
+  
+  # Update select inputs based on the dataset choice
+  observe({
+    x <- get(input$pca_data_select)
+    
+    group_cols <- colnames(x)[sapply(x, is.factor)]
+    
+    updateSelectInput(
+      session = getDefaultReactiveDomain(),
+      "pca_group_select",
+      choices = group_cols
+    )
+  })
 
   output$pca_plot <- renderPlotly({
     plot_data <- pca_data() %>%
@@ -268,6 +281,27 @@ server <- function(input, output) {
 
   dist_data <- reactive({
     dist_data <- get(input$dist_data_select)
+  })
+  
+  # Update select inputs based on the dataset choice
+  observe({
+    x <- get(input$dist_data_select)
+
+    group_cols <- colnames(x)[sapply(x, is.factor)]
+    num_cols <- colnames(x)[sapply(x, is.numeric)]
+    
+    updateSelectInput(
+      session = getDefaultReactiveDomain(),
+      "dist_num_select",
+      choices = num_cols,
+      selected = num_cols[1]
+    )
+
+    updateSelectInput(
+      session = getDefaultReactiveDomain(),
+      "dist_group_select",
+      choices = group_cols
+    )
   })
 
   output$dist_plot <- renderPlot({
@@ -339,6 +373,27 @@ server <- function(input, output) {
 
   ts_data <- reactive({
     ts_data <- get(input$ts_data_select)
+  })
+  
+  # Update select inputs based on the dataset choice
+  observe({
+    x <- get(input$ts_data_select)
+    
+    group_cols <- colnames(x)[sapply(x, is.factor)]
+    num_cols <- colnames(x)[sapply(x, is.numeric)]
+    
+    updateSelectInput(
+      session = getDefaultReactiveDomain(),
+      "ts_num_select",
+      choices = num_cols,
+      selected = num_cols[1]
+    )
+    
+    updateSelectInput(
+      session = getDefaultReactiveDomain(),
+      "ts_group_select",
+      choices = group_cols
+    )
   })
 
   ts_plot_data <- reactive({
