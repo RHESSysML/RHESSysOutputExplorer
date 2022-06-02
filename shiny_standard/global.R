@@ -1,5 +1,18 @@
 ########################## Create Global Variables ########################## 
-
+#
+# The following file is used to load global variables
+# including datasets from data_preparation_standard.Rmd, model output from rf_variable_importance_standard.Rmd
+# or gb_variable_importance_standard.Rmd, and other objects such as local functions and shiny inputs.
+#
+# Use this version if you have one scenario that is being explored. The app is 
+# currently designed to work given 2 datasets - df_raw and df. Additionally,
+# given 1 random forest model - rf. If these names are replaced in the workflow,
+# they will also need to be updated in the global.R, server.R, and ui.R files for the
+# Shiny app within the shiny_standard folder to run properly.
+#
+# The "Inputs" section at the bottom have headers corresponding to the respective tab
+# within the Shiny app.
+#
 ########## Attach Packages ########## 
 
 library(shiny)

@@ -1,5 +1,10 @@
-########################## RHESSysML Shiny App for Sagehen Creek ##########################
-
+########################## RHESSysML Shiny App for Standard Output ##########################
+# 
+# The following file is used to create the tables and plots seen within the Shiny app.
+# Edits to the appearance or reactivity of these objects can be made within this file.
+# 
+# The section headers correspond to the respective tab within the Shiny app.
+# 
 ########## Create the server ##########
 
 server <- function(input, output) {

@@ -1,3 +1,10 @@
+########################## RHESSysML Shiny App for Standard Output ##########################
+# 
+# The following file is used to create the user interface seen within the Shiny app.
+# This includes the relative placement, size, and organization of all elements within the app.
+# 
+# The section headers correspond to the respective tab within the Shiny app.
+# 
 ########################## Create UI ##########################
 
 ui <- fluidPage(
