@@ -1,6 +1,6 @@
 ---
 title: "Data Preparation"
-author: "Peter Menzies"
+author: "Alex Clippinger, Shale Hunter, Peter Menzies, Wylie Hampson"
 date: '2022-04-27'
 output: html_document
 ---
@@ -13,12 +13,13 @@ library(here)
 library(RHESSysIOinR)
 ```
 
-# Data Preparation
+## Read in Data
 
-## Load Data
+The specific `read` function below may need to be changed below depending on the file type of your dataset.
 
-```{r load_data, message = FALSE}
-df_raw <- readRDS(here::here("data", "input", "chapSUpar17_basin.RDS")) 
+```{r read_data, message = FALSE}
+#                                                 ↓ Enter data file name
+df_raw <- read.table(here::here("data", "input", " "), header = TRUE) 
 ```
 
 ## Clean and Aggregate Data
@@ -33,32 +34,27 @@ First, RHESSys output will need to be aggregated and cleaned based on specific r
 
 4.  Creating derived variables (i.e. Peak SWE).
 
-This workflow assumes that the data are aggregated by water year. The code chunk below identifies the variables in our data set that will be converted to factors, variables that will be used to aggregate by water year, and the desired response variable. Change the inputs below to apply to your dataset in whatever way necessary (you might want to include variables that  differentiate the conditions used for a single RHESSys simulation -  examples might be treatment type, location, climate model scenario). 
+This workflow defaults to aggregating by water year---finer temporal resolutions (e.g. daily, weekly) can be used, but model training and tuning times (particularly for gradient boosting) may increase dramatically depending on compute resources. The code chunk below identifies the variables in our data set that will be converted to factors and used for grouping, and the desired response variable. Change the inputs below to apply to your dataset in whatever way necessary (you might want to include variables that differentiate the conditions used for a single RHESSys simulation---examples might be treatment type, location, climate model scenario). 
 
-The `group_cols` object selects the columns that the user wants the raw dataset to be aggregated by. 
+The `factor_vars` object should include the predictor variables that will be converted to factors, which allows the random forest workflow to function. Any predictor variables that should be factors instead of numeric or character should be converted. (Example: stratumID is numeric, but because there are 6 different strata, it makes more sense for them to be factors.) Factor variables will be used to aggregate the dataset along with water year or other temporal resolution.
 
-The `factor_vars` object are the predictor variables that will be converted to factors, which allows the random forest workflow to function. Any predictor variables that should be factors instead of numeric or character should be converted. (Example: stratumID is numeric, but because there are 6 different strata, it makes more sense for them to be factors.)
-
-The `response_var` object is the response variable that the user wants to predict. There should only be one response variable.
-
-```{r}
-# Adding water year
-df_raw <- add_dates(df_raw) %>% 
-  select(-yd)
-```
+The `response_var` object is the response variable that the user wants to predict. There can only be one response variable.
 
 
 ```{r user_inputs}
-group_cols <- c("wy", "basinID")
-factor_vars <- c("basinID")
-response_var <- "plantc"
+# Adding water year
+df_raw <- add_dates(df_raw) %>% 
+  select(-yd)
+
+#                       ↓ enter factor variable names 
+factor_vars <- c("wy", " ")
+
+#                ↓ enter response variable name
+response_var <- " "
 ```
 
 ```{r input_tests}
 # Check class types
-if (class(group_cols) != "character") {
-  stop("The group columns specified above should be written as characters.")
-}
 if (class(factor_vars) != "character") {
   stop("The factor columns specified above should be written as characters.")
 }
@@ -75,7 +71,7 @@ for (column in factor_vars) {
 }
 ```
 
-Since temporal aggregation of the data set is critical to the results, we first create a function that allows us to dynamically select whether monthly or seasonal average temperatures are included as predictor variables. Setting `resolution = 'season'` does seasonal average temperatures, and `resolution = 'month'` does monthly average temperatures. By default, this function is set up to do seasonal average temperatures, and the seasons are:
+Because temporal aggregation of the data set is critical to the results, we first create a function that allows us to dynamically select whether monthly or seasonal average temperatures are included as predictor variables. Setting `resolution = 'season'` does seasonal average temperatures, and `resolution = 'month'` does monthly average temperatures. By default, this function is set up to do seasonal average temperatures, and the seasons are:
 
 Winter = Dec, Jan, Feb, March
 Spring = April, May
@@ -118,61 +114,86 @@ Here is where the categorical variables from the `factor_vars` object (explained
 
 ```{r convert_to_factors}
 # Convert categorical variables to factors
-df_raw[,factor_vars] <- lapply(df_raw[,factor_vars], factor)
+df_raw[, factor_vars] <- lapply(df_raw[, factor_vars], factor)
 
 ```
 
-Next, for our example, there were some changes that needed to be made that may or may not apply to your dataset. For this example, we are changing `slope` and `aspect` from radians to degrees, aggregating by water year, and adding two derived variables: `peak_swe` and `swe_precip_ratio`. We decided to create columns for `peak_swe` and `swe_precip_ratio` because we thought they would be important variables in determining the response variable in our example, which was net primary productivity. This code chuck is where you add your own derived variables that may be important to your analysis. If you wish to aggregate your data in a way different than in our example, this is also the code chunk to do that in.
+Next, the data are aggregated and averaged by water year and other factor variables.
 
 ```{r prepare_data}
 # Rename chosen response variable to "response"
 df_raw <- df_raw %>% 
   rename("response" = response_var)
 
+# Remove columns with zero variance
+num_vars <- sapply(df_raw, is.numeric)
+df_num_vars <- df_raw[, num_vars]
+no_variance <- sapply(df_num_vars, function(col) var(col) == 0)
+no_variance <- colnames(df_num_vars[, no_variance])
+df_raw <- df_raw %>% 
+  select(!all_of(no_variance))
+rm(num_vars, df_num_vars, no_variance)
+
 # Group by chosen columns
 df <- df_raw %>%   
-  group_by(across(all_of(group_cols)))
+  group_by(across(all_of(factor_cols)))
 
 # Aggregate average temperatures using the aggregate_temp() function defined above.
 df <- aggregate_temp(df, 'season')
 
-# Create features for peak swe and the peak_swe/precip ratio
+# Average all numeric values by groups
 df <- df %>% 
   summarise_if(is.numeric, mean) %>% 
   ungroup()
 
-# Reorder response variables first and remove any unwanted variables
+# Reorder response variables first and remove dates
 df <- df %>% 
   select(response, everything()) %>%
-  select(-c(wy, day, month, year, basinID))
+  select(-c(wy, day, month, year))
 ```
 
-Here, we split our data into two separate data frames, one for each climate scenario. This will allow us to analyze the impact of  climate on variable importance by calculating different importance ranks for each climate scenario, and comparing how each variable gains or loses importance in a warming climate.
 
-This is an optional split: the `clim` variable could have been left as a column in the original dataframe, in which case climate scenario itself would be used as a predictor variable for NPP. For all scenario-type variables, the user can ultimately choose whether or not it is included as a predictor variable or used as the basis of separation to generate a comparison.
+## Split Data (optional)
+
+The code below offers the option to split the current dataframe into multiple by a given variable. Doing so allows changes in variable relationships to be observed across different groups. The case study around which this workflow was designed involved different climate warming scenarios and separate dataframes were used to assess changes across those scenarios. This step is not necessary, however.
+
+If this is not applicable to your dataset, this step can be ignored and will not run.
+
+If you would like to split the dataframe, set the `split_df` object below to `TRUE`, and assign the name of the desired variable to the `split_var` object.
 
 
 ```{r split_data}
-if ("clim" %in% names(df)) {
+split_df <- FALSE
 
-  # Create data frame with only climate scenario 0
-  df_clim0 <- df %>% 
-    filter(clim == 0) %>% 
-    select(-c(clim, wy))
+if (split_df == TRUE) {
   
-  # Create data frame with only climate scenario 2
-  df_clim2 <- df %>% 
-    filter(clim == 2) %>% 
-    select(-c(clim, wy))
+#               ↓ enter variable to split by 
+  split_var <- " "
+  split_groups <- levels(df[[split_var]])
   
+  if (length(split_groups) > 4) {
+    stop("It's advised not to create more than 4 different dataframes")
+  }
+  
+  for (i in seq_along(split_groups)) {
+    tmp_df <- df %>% 
+      filter(split_var == split_groups[i])
+    
+    assign(tmp_df, paste0("df_", split_groups[i]))
+  }
+  
+  # remove temporary objects
+  rm(c(tmp_df, climate_scenarios))
 }  
 ```
 
-Now, we have two data tables representing the two climate scenarios.
+## Save Data
 
-Along with this workflow, this repo also contains a Shiny App. The Shiny App can be used post-analysis to graph some of the relationships that are identified within this feature selection workflow. Here we'll save the newly aggregated datasets to be automatically exported into the Shiny App.
+Here we save all dataframes created during this process. 
+
+Note: `save.image()` saves all objects currently in the RStudio environment, so if you have objects loaded unrelated to this workflow they will be saved in the file created below as well.
 
 ```{r}
-save.image(here::here("data", "input", "prepared_data_standard.RData"))
+save.image(here::here("data", "input", "prepared_data_test.RData"))
 ```
 
