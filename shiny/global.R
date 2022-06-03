@@ -15,6 +15,10 @@
 #
 ########## Attach Packages ########## 
 
+# Install ggbiplot if necessary
+if (!("ggbiplot" %in% installed.packages())) {
+  devtools::install_github("vqv/ggbiplot")}
+
 library(shiny)
 library(shinythemes)
 library(shinydashboard)
