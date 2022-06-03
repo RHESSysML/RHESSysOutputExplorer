@@ -344,7 +344,7 @@ gbm_model_cv2 <- read_rds(here::here("data/input/GBm2.RDS"))
 ```
 
 
-To get the 
+To get the model with the best-performing parameter set from each cliamte scenario from the tuning grid above, we simply select the `bestTune` element from our models. Running these two models individually will then allow us to extract accuracy and importance metrics more easily in the following sections.
 
 ```{r}
 best_grid0 <- gbm_model_cv0$bestTune

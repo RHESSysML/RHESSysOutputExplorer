@@ -252,10 +252,10 @@ set.seed(4326)
 #   method = "gbm",
 #   verbose = FALSE)
 
-gbm_model_cv <- read_rds(here::here("data", "input", "GBm_standard.RData"))
+gbm_model_cv <- read_rds(here::here("data", "input", "GBm_chap.RData"))
 ```
 
-To get the best
+To get the model with the best-performing parameter set from the tuning grid above, we simply select the `bestTune` element from our model. Running this model individually will then allow us to extract accuracy and importance metrics more easily in the following sections.
 
 ```{r}
 best_grid <- gbm_model_cv$bestTune
