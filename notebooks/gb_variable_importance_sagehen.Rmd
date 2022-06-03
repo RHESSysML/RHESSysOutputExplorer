@@ -311,32 +311,39 @@ Running the code chunk below essentially trains a new gradient boosting model fo
 ```{r}
 set.seed(4326)
 
-# gbm_model_cv0 <- caret::train(
-#   x = xhot0,
-#   y = y0,
-#   trControl = fitControl,
-#   tuneGrid = tune_grid,
-#   metric = 'RMSE',
-#   method = "gbm",
-#   verbose = FALSE)
+newdata = FALSE
 
-gbm_model_cv0 <- read_rds(here::here("data/input/GBm0.RDS"))
+if (newdata) {
+  gbm_model_cv0 <- caret::train(
+  x = xhot0,
+  y = y0,
+  trControl = fitControl,
+  tuneGrid = tune_grid,
+  metric = 'RMSE',
+  method = "gbm",
+  verbose = FALSE)
+} else {
+  gbm_model_cv0 <- read_rds(here::here("data/input/GBm0.RDS"))
+}
+
 # saveRDS(gbm_model_cv0, file = here::here("data", "input", "GBm0.RDS"))
 ```
 
 ```{r}
 set.seed(4326)
 
-# gbm_model_cv2 <- caret::train(
-#   x = xhot2,
-#   y = y2,
-#   trControl = fitControl,
-#   tuneGrid = tune_grid,
-#   metric = 'RMSE',
-#   method = "gbm",
-#   verbose = FALSE)
-
+if (newdata) {
+gbm_model_cv2 <- caret::train(
+  x = xhot2,
+  y = y2,
+  trControl = fitControl,
+  tuneGrid = tune_grid,
+  metric = 'RMSE',
+  method = "gbm",
+  verbose = FALSE)
+} else {
 gbm_model_cv2 <- read_rds(here::here("data/input/GBm2.RDS"))
+}
 # saveRDS(gbm_model_cv2, file = here::here("data", "input", "GBm2.RDS"))
 ```
 

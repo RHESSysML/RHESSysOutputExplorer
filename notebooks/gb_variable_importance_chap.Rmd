@@ -240,16 +240,21 @@ Running the code chunk below essentially trains a new gradient boosting model fo
 ```{r}
 set.seed(4326)
 
-# gbm_model_cv <- caret::train(
-#   x = x,
-#   y = y,
-#   trControl = fitControl,
-#   tuneGrid = tune_grid,
-#   metric = 'RMSE',
-#   method = "gbm",
-#   verbose = FALSE)
+newdata = FALSE
 
-gbm_model_cv <- read_rds(here::here("data", "input", "GBm_chap.RData"))
+if (newdata) {
+  gbm_model_cv <- caret::train(
+  x = x,
+  y = y,
+  trControl = fitControl,
+  tuneGrid = tune_grid,
+  metric = 'RMSE',
+  method = "gbm",
+  verbose = FALSE)
+} else {
+  gbm_model_cv <- read_rds(here::here("data/input/GBm_chap.RDS"))
+}
+
 ```
 
 To get the model with the best-performing parameter set from the tuning grid above, we simply select the `bestTune` element from our model. Running this model individually will then allow us to extract accuracy and importance metrics more easily in the following sections.
