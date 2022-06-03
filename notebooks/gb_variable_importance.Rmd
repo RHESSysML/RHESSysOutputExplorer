@@ -1,6 +1,6 @@
 ---
 title: "Gradient Boosting Workflow Variation"
-author: "RHESSysML Capstone Group"
+author: "Alex Clippinger, Wylie Hampson, Shale Hunter, Peter Menzies"
 date: "2/5/2022"
 output: 
   rmarkdown::html_document:
@@ -323,7 +323,7 @@ set.seed(4326)
 #   method = "gbm",
 #   verbose = FALSE)
 
-gbm_model_cv0 <- read_rds(here::here("data/input/GBm0.rds"))
+gbm_model_cv0 <- read_rds(here::here("data/input/GBm0.RDS"))
 # saveRDS(gbm_model_cv0, file = here::here("data", "input", "GBm0.RDS"))
 ```
 
@@ -339,7 +339,7 @@ set.seed(4326)
 #   method = "gbm",
 #   verbose = FALSE)
 
-gbm_model_cv2 <- read_rds(here::here("data/input/GBm2.rds"))
+gbm_model_cv2 <- read_rds(here::here("data/input/GBm2.RDS"))
 # saveRDS(gbm_model_cv2, file = here::here("data", "input", "GBm2.RDS"))
 ```
 
@@ -454,6 +454,8 @@ First, the following objects are saved for use in the app.
 ```{r save_model_output}
 save(imp_gb0, imp_gb2, file = here::here("data", "output", "gb_model_output.RData"))
 ```
+
+Run the following code chunk to launch the Shiny app (note you will have to set `run_app` to TRUE):
 
 ```{r}
 run_app <- FALSE

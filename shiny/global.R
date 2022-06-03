@@ -1,5 +1,18 @@
 ########################## Create Global Variables ########################## 
-
+#
+# The following file is used to load global variables
+# including datasets from data_preparation.Rmd, model output from rf_variable_importance.Rmd
+# or gb_variable_importance.Rmd, and other objects such as local functions and shiny inputs.
+#
+# Use this version if you have two scenarios that are being compared. The app is 
+# currently designed to work given 4 datasets - df_raw, df, df_clim0, and df_clim2. Additionally,
+# given 2 random forest models - rf_clim0 and rf_clim2. If these names are replaced in the workflow,
+# they will also need to be updated in the global.R, server.R, and ui.R files for the
+# Shiny app within the shiny folder to run properly.
+#
+# The "Inputs" section at the bottom have headers corresponding to the respective tab
+# within the Shiny app.
+#
 ########## Attach Packages ########## 
 
 library(shiny)
@@ -78,11 +91,6 @@ df_clim0_reduced <- df_clim0 %>%
 df_clim2_reduced <- df_clim2 %>%
   select(c(rownames(rf_clim2$finalModel$importance)))
 
-
-########## User Inputs ########## 
-
-factor_vars <- c("stratumID", "scen", "topo")
-response_var <- colnames(df[1])
 
 ######### Text for the welcome page ########## 
 
@@ -219,7 +227,7 @@ pca_data_select <- selectInput("pca_data_select",
 
 pca_group_select <- selectInput("pca_group_select",
   label = tags$h4("Select your groups"),
-  choices = c(colnames(df)[sapply(df, is.factor)]),
+  choices = c("None", colnames(df)[sapply(df, is.factor)]),
   multiple = FALSE)
 
 pca_alpha <- sliderInput("pca_alpha",
@@ -245,7 +253,7 @@ dist_data_select <- selectInput("dist_data_select",
 
 dist_group_select <- selectInput("dist_group_select",
   label = tags$h4("Select your groups"),
-  choices = c(colnames(df)[sapply(df, is.factor)]),
+  choices = c("None", colnames(df)[sapply(df, is.factor)]),
   multiple = FALSE
 )
 
@@ -266,7 +274,7 @@ ts_data_select <- selectInput("ts_data_select",
 
 ts_group_select <- selectInput("ts_group_select",
   label = tags$h4("Select your groups"),
-  choices = c(colnames(df)[sapply(df, is.factor)]),
+  choices = c("None", colnames(df)[sapply(df, is.factor)]),
   multiple = FALSE
 )
 

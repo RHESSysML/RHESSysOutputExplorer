@@ -1,6 +1,6 @@
 ---
 title: "Gradient Boosting Workflow Variation"
-author: "RHESSysML Capstone Group"
+author: "Alex Clippinger, Wylie Hampson, Shale Hunter, Peter Menzies"
 date: "2/5/2022"
 output: 
   rmarkdown::html_document:
@@ -55,7 +55,7 @@ Note that this workflow will use data that is aggregated by water year but **not
 ## Load Data
 
 ```{r}
-load(here::here("data", "input", "prepared_data.RData"))
+load(here::here("data", "input", "prepared_data_standard.RData"))
 
 ```
 
@@ -116,7 +116,7 @@ Below, there are two methods for setting preference order: (1) Manually creating
 ```{r auto_preference_order, warning=FALSE}
 
 # Find preliminary importance using random forest
-imp <- train(x = df %>% select(!response),
+prelim_imp <- train(x = df %>% select(!response),
               y = df$response,
               method = 'rf',
               importance = TRUE,
@@ -124,7 +124,7 @@ imp <- train(x = df %>% select(!response),
               trControl = trainControl(method = "none", seed = 4326))
 
 # Set preference order based on variable importance
-pref_order <- varImp(imp$finalModel, scale = FALSE) %>% 
+pref_order <- varImp(prelim_imp$finalModel, scale = FALSE) %>% 
   arrange(-Overall) %>% 
   rownames()
 ```
@@ -140,10 +140,15 @@ cor.threshold = 0.75
 source(here::here("R", "remove_vif.R"))
 source(here::here("R", "remove_cor.R"))
 
-# Create list of selected variables
-vif <- remove_vif(df_num_preds, vif.threshold = vif.threshold, pref_order)$selected.variables
-cor <- remove_cor(df_num_preds, cor.threshold = cor.threshold, pref_order)$selected.variables
-select_variables <- unique(append(vif, cor))
+# Removing variables with 0 variance
+no_var <- sapply(df_num_preds, function(col) var(col) == 0)
+df_num_preds <- df_num_preds[, !no_var]
+
+# Identifying variables with correlations or VIF above given thresholds
+vif_cor <- remove_cor(df_num_preds, cor.threshold = cor.threshold, pref_order) %>% 
+  remove_vif(vif.threshold = vif.threshold, pref_order)
+
+select_variables <- vif_cor$selected.variables
 
 # Remove numeric variables with multicollinearity
 df_reduced <- df %>% 
@@ -186,13 +191,15 @@ Most gradient boosting packages like the one used in this workflow are unable to
 Additionally, the `gbm` package requires that the response variable is split out from the predictor variables to train the model.
 
 ```{r}
+# In the case of this dataset, there are no factor variables remaining so there is no need to one-hot encode anything.
+
 # Predictor vs response variables
 y = df$response
 x = df[-1]
 
-# One-hot encoding
-x[,df_fpreds] <- lapply(x[,df_fpreds], factor)
-xhot = x %>% data.table::data.table() %>% mltools::one_hot(cols = df_fpreds)
+# # One-hot encoding
+# x[,df_fpreds] <- lapply(x[,df_fpreds], factor)
+# xhot = x %>% data.table::data.table() %>% mltools::one_hot(cols = df_fpreds)
 ```
 
 
@@ -236,16 +243,16 @@ Running the code chunk below essentially trains a new gradient boosting model fo
 ```{r}
 set.seed(4326)
 
-gbm_model_cv <- caret::train(
-  x = xhot,
-  y = y,
-  trControl = fitControl,
-  tuneGrid = tune_grid,
-  metric = 'RMSE',
-  method = "gbm",
-  verbose = FALSE)
+# gbm_model_cv <- caret::train(
+#   x = x,
+#   y = y,
+#   trControl = fitControl,
+#   tuneGrid = tune_grid,
+#   metric = 'RMSE',
+#   method = "gbm",
+#   verbose = FALSE)
 
-#gbm_model_cv <- read_rds(here::here("data", "input", "GBm.rds"))
+gbm_model_cv <- read_rds(here::here("data", "input", "GBm_standard.RData"))
 ```
 
 To get the best
@@ -254,7 +261,7 @@ To get the best
 best_grid <- gbm_model_cv$bestTune
 
 gbm_model_cv_best <- caret::train(
-  x = xhot,
+  x = x,
   y = y,
   trControl = fitControl,
   tuneGrid = best_grid,
@@ -326,6 +333,8 @@ First, the following objects are saved for use in the app.
 ```{r save_model_output}
 save(imp_gb, file = here::here("data", "output", "gb_model_output_standard.RData"))
 ```
+
+Run the following code chunk to launch the Shiny app (note you will have to set `run_app` to TRUE):
 
 ```{r}
 run_app <- FALSE

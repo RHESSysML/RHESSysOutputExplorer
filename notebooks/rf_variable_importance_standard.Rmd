@@ -189,11 +189,11 @@ An essential part of building a machine learning model is tuning hyper-parameter
 
 The `mtry` parameter determines the number of variables randomly sampled as candidates at each split. The default value for regression is p/3, where p is the number of predictor variables.
 
-The function below creates a vector of accuracy results of random forests using different values for `mtry`.
-
 ```{r tuning_function}
 df_reduced <- as.data.frame(df_reduced)
 ```
+
+The function below creates a vector of accuracy results of random forests using different values for `mtry`.
 
 Next, we run the function for both climate scenario data sets and visualize the results. Model error here is assessed using out-of-bag (OOB) observations in the data, which refers to observations that were not sampled during bootstrapping for the particular Random Forest being assessed. In other words OOB data were not used to train the model and can be used to test accuracy without the risk of bias incurred from model over-fitting. The best `mtry value` in the plots below will be represented by the lowest `OOB Error`.
 
