@@ -1,7 +1,7 @@
 ---
 title: "Feature Selection Framework"
-author: "RHESSysML Capstone Group"
-date: "2/5/2022"
+author: "Alex Clippinger, Wylie Hampson, Shale Hunter, Peter Menzies"
+date: '2022-06-03'
 output: 
   rmarkdown::html_document:
     toc: true

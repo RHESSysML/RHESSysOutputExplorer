@@ -1,7 +1,7 @@
 ---
-title: "Gradient Boosting Workflow Variation"
+title: "Gradient Boosting Workflow Template"
 author: "Alex Clippinger, Wylie Hampson, Shale Hunter, Peter Menzies"
-date: "2/5/2022"
+date: '2022-06-03'
 output: 
   rmarkdown::html_document:
     toc: true
