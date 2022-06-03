@@ -1,0 +1,330 @@
+---
+title: "Gradient Boosting Workflow Variation"
+author: "RHESSysML Capstone Group"
+date: "2/5/2022"
+output: 
+  rmarkdown::html_document:
+    toc: true
+    toc_float: true
+    code_folding: show
+    theme: cerulean
+---
+
+# Introduction to Gradient Boosting
+
+This workflow is meant as a compliment to the random forest workflow, which is available in the `notebooks` folder. While random forest is a "quick and easy" machine learning technique that has been used to determine variable importance for ecohydrologic models like RHESSys before, it is far from the only method that can be used for this purpose. While the scope of this project does not allow a full exploration of all the possibilities of machine learning applications to RHESSys output, gradient boosting provides a good comparison to random forest because of a few important conceptual similarities and differences. 
+
+Firstly, both random forest and gradient boosting are tree-based machine learning models, which means the mechanisms by which the models make decisions are similar, at the most basic level---this allows for a direct comparison of model performance that is easy to understand from a human perspective. But at the same time, gradient boosting has a number of different hyperparameters that allow for greater user control over the model than can be achieved using random forest. In a predictive model, this is generally favorable because it leads to greater predictive power; however, gradient boosting is less commonly used to identify variable importance, which is the purpose of these workflows.
+
+As you will see, the extra time and computational demands of creating a gradient boosting model may not be an efficient tradeoff compared to a random forest model which may be nearly as accurate. However, it may still prove useful as an external validation of importance measures generated using random forest, or as an avenue to begin exploring further applications of machine learning to RHESSys data.
+
+# Setup
+
+## renv:
+
+To help ensure reproducibility, the packages and package versions used to build this workflow have been saved via [`renv`](https://rstudio.github.io/renv/articles/renv.html). To download any missing packages and load the correct versions, run the command `renv::restore()` in the console. Doing so will not impact your package versions outside of this R Project. It may take several minutes depending on the number of discrepancies.
+
+```{r setup, include = TRUE, warning=FALSE, message=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+options(scipen = 999)
+
+# Standard packages
+library(tidyverse)
+library(here)
+library(patchwork)
+library(psych)
+library(kableExtra)
+library(zeallot)
+library(DT)
+
+# Machine Learning packages
+library(caret)
+library(party)
+library(partykit)
+library(permimp)
+library(gbm)
+library(spatialRF)
+```
+
+
+# Data
+
+## Load Data
+
+```{r}
+load(here::here("data", "input", "prepared_data.RData"))
+```
+
+## Summarize Data
+
+Next, we want to get a summary description of the data set. This step can be used to check if any variables do not have the expected range, magnitude, class, etc.
+
+```{r describe_data}
+source(here::here("R", "summarize_data.R"))
+
+summarize_data(df)
+```
+
+
+# Remove Multicollinearity
+
+Highly correlated predictor variables are not as much a concern in machine learning when creating a predictive model. However, for this process of assessing relative predictor variable importance, multicollinear variables have biased importance (Strobl et al. 2008). Therefore, these need to be handled prior to assessing feature importance.
+
+## Method
+
+Below, we use Variance Inflation Factors (VIF) and Pearson Correlation Coefficients to remove variables with high multicollinearity. This is implemented using the `auto_vif()` and `auto_cor()` functions from the `spatialRF` package. Both functions allow the user to define an order of preference for the selection of variables, which will be discussed below. If no preference order is decided, the `auto_vif()` function orders the variables from minimum to maximum VIF, and the `auto_cor()` function orders variables by their column order.
+
+The `auto_vif()` function works by initially starting with the variable with highest preference. Then, it iterates through the preference order list, computing the VIF for each new variable added. If the VIF of the new variable is lower than the threshold it is kept, if not the variable is removed. This process is continued until all VIF values are below the user-input threshold.
+
+Similarly, the `auto_cor()` function works by computing a correlation matrix for all variables. Next, it computes the maximum correlation for each variable. The function then begins with the variable with lowest preference. If that variables maximum correlation coefficient is above the user-input threshold, that variable is removed. This process is continued until all correlation values are below the user-input threshold.
+
+## Identify and Remove Correlated Variables
+
+First, we create data frames containing only the predictor variables to assist with the next steps.
+
+```{r get_predictors}
+# Save data frames of predictor variables
+df_num_preds <- df %>% 
+  select(!response & where(is.numeric))
+
+df_fpreds <- df %>% 
+  select(!response & where(is.factor)) %>% 
+  colnames()
+```
+
+Below, there are two methods for setting preference order: (1) Manually creating an ordered vector of column names, or (2) Allowing a preliminary random forest method to determine preference order based on variable importance. Note that in the preliminary random forest, highly correlated variables will not produce accurate estimates of importance. However, we assume that relative importance is reasonably accurate to support the selection between highly correlated variables. The second method is used by default. 
+
+1. Run this chunk to manually create an ordered vector of column names. The vector does not need to include the names of all predictors - only those that you would like to keep in the analysis.
+
+```{r manual_preference_order}
+# Preference order can be determined manually for variables of interest:
+
+#pref_order0 <- c("precip", "rz_storage", "trans", "evap")
+#pref_order2 <- c("precip", "rz_storage", "trans", "evap")
+```
+
+2. Run this chunk to allow preliminary random forest to automatically determine preference order. Note: even though we will be using gradient boosting here for the actual analysis, preliminary importance is set using a random forest because it is faster.
+
+```{r auto_preference_order, warning=FALSE}
+
+# Find preliminary importance using random forest
+imp <- train(x = df %>% select(!response),
+              y = df$response,
+              method = 'rf',
+              importance = TRUE,
+              replace = TRUE,
+              trControl = trainControl(method = "none", seed = 4326))
+
+# Set preference order based on variable importance
+pref_order <- varImp(imp$finalModel, scale = FALSE) %>% 
+  arrange(-Overall) %>% 
+  rownames()
+```
+
+Thresholds for VIF and correlation can be set below, with default values of 5 and 0.75, respectively. Increasing the thresholds will reduce the number of variables that get removed, but it will increase the likelihood that collinearity influences the results.
+
+```{r set_thresholds}
+vif.threshold = 5
+cor.threshold = 0.75
+```
+
+```{r remove_multicollinearity, warning = FALSE}
+source(here::here("R", "remove_vif.R"))
+source(here::here("R", "remove_cor.R"))
+
+# Create list of selected variables
+vif <- remove_vif(df_num_preds, vif.threshold = vif.threshold, pref_order)$selected.variables
+cor <- remove_cor(df_num_preds, cor.threshold = cor.threshold, pref_order)$selected.variables
+select_variables <- unique(append(vif, cor))
+
+# Remove numeric variables with multicollinearity
+df_reduced <- df %>% 
+  select(c(response, all_of(df_fpreds), all_of(select_variables)))
+
+```
+
+## Summary of Removed Variables
+
+The next step is intended to elucidate the previous multicollinearity reduction process by creating tables and plots showing which variables were selected and removed, and why. This information can be used to determine whether the auto-generated preference order based on preliminary importance performed satisfactorily, or whether the preference order should be set manually.
+
+```{r summarize_removed_vars_function, class.source='fold-hide'}
+source(here::here("R", "summarize_var_removal.R"))
+source(here::here("R", "plot_removed_cor.R"))
+```
+
+The following functions output two tables and two plots of all variables indicating selection status and the criteria by which those selections were made. The first table shows preliminary importance and VIF, and the second shows correlation between each variable combination. Preliminary importance and VIF are also plotted visually in the two bar charts. 
+
+### Summary Tables {.tabset}
+
+#### VIF Summary Table
+
+```{r vif_summary_table, warning=FALSE}
+summarize_var_removal(df, select_variables, prelim_imp, table = TRUE)
+```
+
+#### Correlation Summary Table
+
+```{r cor_summary_table}
+plot_removed_cor(select_variables, df_num_preds)
+```
+
+
+# Feature Importance with Gradient Boosting
+
+## Gradient Boosting-Specific Data Preparation: One-Hot Encoding
+
+Most gradient boosting packages like the one used in this workflow are unable to directly process categorical variables (there are exceptions, such as `LightGBM` - but for the sake of consistency and compatibility with `caret`, we won't explore that package here). This means that in order for the gradient boosting model to be able to handle categorical variables they must be one-hot encoded. One-hot encoding is essentially a means to convert categorical variables to numerical variables by splitting each unique level of the categorical variable into its own column; then, for each observation where the original categorical variable takes on that level the new variable is given a value of 1. All observations that are at different levels of the original variable are given a value of 0.
+
+Additionally, the `gbm` package requires that the response variable is split out from the predictor variables to train the model.
+
+```{r}
+# Predictor vs response variables
+y = df$response
+x = df[-1]
+
+# One-hot encoding
+x[,df_fpreds] <- lapply(x[,df_fpreds], factor)
+xhot = x %>% data.table::data.table() %>% mltools::one_hot(cols = df_fpreds)
+```
+
+
+## Hyper-Parameter Tuning
+
+There is a bit more complexity that goes into tuning a Gradient Boosting model than a Random Forest. The `expand.grid()` function will allow us to test multiple values of each parameter to optimize model performance. Some of the standard hyperparameters that we will tune here are:
+
+ - `nrounds` (# Boosting Iterations)
+ - `max_depth` (Max Tree Depth)
+ - `eta` (Shrinkage)
+ - `gamma` (Minimum Loss Reduction)
+ - `colsample_bytree` (Subsample Ratio of Columns)
+ - `min_child_weight` (Minimum Sum of Instance Weight)
+ - `subsample` (Subsample Percentage)
+ 
+Out of all these parameters, all except `nrounds` are used to prevent overfitting, which is a more common problem in boosting models than random forests. The inherent randomness of random forests prevents overfitting relatively effectively, but more care is required with gradient boosting. For example, the `colsample_bytree` parameter mimics the functionality of a random forest model by randomly sampling the specified proportions of columns to build a boosted tree.
+
+Additionally, we will use `trainControl()` to implement 10-fold cross-validation to further avoid overfitting.
+
+```{r}
+
+fitControl <- caret::trainControl(
+  method = "cv",
+  number = 10,
+  savePredictions = 'final')
+
+tune_grid <- expand.grid(
+  n.trees = seq(from = 200, to = 800, by = 50),
+  shrinkage = c(0.01, 0.02, 0.05, 0.1, 0.3),
+  interaction.depth = c(2, 3, 4, 5, 6), 
+  n.minobsinnode = c(10, 30, 50))
+
+```
+
+Note: these parameters are unique to the `gbm` package; there are many packages to implement gradient boosting 
+
+Running the code chunk below essentially trains a new gradient boosting model for every possible combination of the parameters listed above in the `tune_grid` object; this means that 1,200 individual models are trained! This is slow.
+
+*To save time when running this workflow, the code to generate the gradient boosting model is commented out, and a pre-run model is loaded from the `models` folder. If you would like to experiment with creating your own model, uncomment the code below - just be aware that it will take a while! Alternatively, small manual tweaks can be made to the model by looking at the `bestTune` object inside of `gbm_model_cv`, then using a modified `tune_grid` that only has single numbers instead of vectors for each hyper-parameter.*
+
+```{r}
+set.seed(4326)
+
+gbm_model_cv <- caret::train(
+  x = xhot,
+  y = y,
+  trControl = fitControl,
+  tuneGrid = tune_grid,
+  metric = 'RMSE', # root mean squared error
+  method = "gbm",
+  verbose = FALSE)
+
+#gbm_model_cv <- read_rds(here::here("data", "input", "GBm.rds"))
+```
+
+To get the best
+
+```{r}
+best_grid <- gbm_model_cv$bestTune
+
+gbm_model_cv_best <- caret::train(
+  x = xhot,
+  y = y,
+  trControl = fitControl,
+  tuneGrid = best_grid,
+  metric = 'RMSE',
+  method = "gbm",
+  verbose = FALSE)
+```
+
+
+### Assessing Feature Importance
+
+Assessing feature importance is a complex task with many possible approaches. Tree based models like random forest and gradient boosting offer convenient "split-improvement" measures, like mean increase in purity and minimum depth, which are intrinsically derived during model construction. However, these have been shown to be biased towards variables with many categories or large value ranges (Strobl et al. 2007). Despite some of their shortcomings, these importance measures can provide insights that are further explored in the random forest workflow.
+
+As the primary measure of importance we instead use partial permutation importance via the `varImp` function. Permutation importance has been tested and determined to be the most unbiased importance metric for data with a mix of categorical and continuous variables with a variety of classes and ranges, respectively. This is calculated in the following steps:
+
+1. Assess prediction accuracy (mean squared error) of the model on the out-of-bag data.
+
+2. Permute the values of a given variable.
+
+3. Feed the dataset with the permuted values into the Random Forest and reassess model accuracy.
+
+4. Importance of the permuted variable is deemed to be the mean loss in accuracy when its values were permuted.
+
+```{r}
+
+gbm_imp = varImp(gbm_model_cv_best, scale = FALSE)
+imp_gb = gbm_imp$importance
+imp_gb = imp_gb %>% mutate(Variable = row.names(imp_gb)) %>% 
+  filter(imp_gb$Overall != 0)
+
+```
+
+
+# Model Evaluation
+
+The following section provides visualizations and statistics to evaluate the gradient boosting model performance.
+
+```{r}
+gb_fit <- round(tail(gbm_model_cv_best$results$Rsquared, 1)*100, 2)
+
+```
+
+The model explained `r gb_fit`% of variance in NPP.
+
+# Visualize results
+
+```{r plot_imp}
+source(here::here("R", "plot_imp.R"))
+
+plot <- plot_imp(imp_gb)
+plot
+```
+
+
+```{r}
+gbm_model_cv_best$results$RMSE
+gbm_model_cv_best$results$Rsquared
+```
+
+
+# Further Exploration
+
+## Shiny App
+
+The capstone team created an application with a suite of interactive visualization tools using the `Shiny` package. It can be used to further explore the original data set and the variable importance results from the workflow. The app can be launched below by setting `run_app` below to `TRUE`.
+
+First, the following objects are saved for use in the app.
+
+```{r save_model_output}
+save(imp_gb, file = here::here("data", "output", "gb_model_output_standard.RData"))
+```
+
+```{r}
+run_app <- FALSE
+
+if (run_app == TRUE) {
+  shiny::runApp(here::here("shiny"))
+}
+```
+
