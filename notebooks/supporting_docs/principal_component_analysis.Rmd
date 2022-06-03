@@ -17,7 +17,7 @@ library(plotly)
 # Load Data
 
 ```{r load_data, message = FALSE}
-load(here::here("data", "input", "prepared_data.RData"))
+load(here::here("data", "input", "prepared_data_sagehen.RData"))
 ```
 
 # Principal Component Analysis (PCA)
