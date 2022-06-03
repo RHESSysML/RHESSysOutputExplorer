@@ -349,7 +349,7 @@ To get the model with the best-performing parameter set from each cliamte scenar
 ```{r}
 best_grid0 <- gbm_model_cv0$bestTune
 
-gbm_model_cv0_best <- caret::train(
+model_clim0 <- caret::train(
   x = xhot0,
   y = y0,
   trControl = fitControl,
@@ -360,7 +360,7 @@ gbm_model_cv0_best <- caret::train(
 
 best_grid2 <- gbm_model_cv2$bestTune
 
-gbm_model_cv2_best <- caret::train(
+model_clim2 <- caret::train(
   x = xhot2,
   y = y2,
   trControl = fitControl,
@@ -387,17 +387,17 @@ As the primary measure of importance we instead use partial permutation importan
 
 ```{r}
 
-gbm_imp0 = varImp(gbm_model_cv0_best, scale = FALSE)
-imp_gb0 = gbm_imp0$importance
-imp_gb0 = imp_gb0 %>% mutate(Variable = row.names(imp_gb0)) %>% 
-  filter(imp_gb0$Overall != 0) %>% 
+gbm_imp0 = varImp(model_clim0, scale = FALSE)
+imp_clim0 = gbm_imp0$importance
+imp_clim0 = imp_clim0 %>% mutate(Variable = row.names(imp_clim0)) %>% 
+  filter(imp_clim0$Overall != 0) %>% 
   mutate(Rank = rank(-Overall)) %>% 
   arrange(Rank)
 
-gbm_imp2 = varImp(gbm_model_cv2_best, scale = FALSE)
-imp_gb2 = gbm_imp2$importance
-imp_gb2 = imp_gb2 %>% mutate(Variable = row.names(imp_gb2)) %>% 
-  filter(imp_gb2$Overall != 0) %>% 
+gbm_imp2 = varImp(model_clim2, scale = FALSE)
+imp_clim2 = gbm_imp2$importance
+imp_clim2 = imp_clim2 %>% mutate(Variable = row.names(imp_clim2)) %>% 
+  filter(imp_clim2$Overall != 0) %>% 
   mutate(Rank = rank(-Overall)) %>% 
   arrange(Rank)
 
@@ -408,9 +408,9 @@ imp_gb2 = imp_gb2 %>% mutate(Variable = row.names(imp_gb2)) %>%
 The following section provides visualizations and statistics to evaluate the gradient boosting model performance.
 
 ```{r}
-gb_fit0 <- round(tail(gbm_model_cv0_best$results$Rsquared, 1)*100, 2)
+gb_fit0 <- round(tail(model_clim0$results$Rsquared, 1)*100, 2)
 
-gb_fit2 <- round(tail(gbm_model_cv2_best$results$Rsquared, 1)*100, 2)
+gb_fit2 <- round(tail(model_clim2$results$Rsquared, 1)*100, 2)
 
 ```
 
@@ -421,25 +421,25 @@ The model explained `r gb_fit2`% of variance in NPP in the 2 degree climate warm
 ```{r}
 source(here::here("R", "df_imp_table.R"))
 
-df_imp_table(imp_gb0, imp_gb2)
+df_imp_table(imp_clim0, imp_clim2)
 ```
 
 ```{r plot_imp}
 source(here::here("R", "plot_imp.R"))
 
-clim0_plot <- plot_imp(imp_gb0)
-clim2_plot <- plot_imp(imp_gb2)
+clim0_plot <- plot_imp(imp_clim0)
+clim2_plot <- plot_imp(imp_clim2)
 
 clim0_plot + clim2_plot
 ```
 
 
 ```{r}
-gbm_model_cv0_best$results$RMSE
-gbm_model_cv2_best$results$Rsquared
+model_clim0$results$RMSE
+model_clim0$results$Rsquared
 
-gbm_model_cv0_best$results$RMSE
-gbm_model_cv2_best$results$Rsquared
+model_clim2$results$RMSE
+model_clim2$results$Rsquared
 ```
 
 
@@ -452,7 +452,8 @@ The capstone team created an application with a suite of interactive visualizati
 First, the following objects are saved for use in the app.
 
 ```{r save_model_output}
-save(imp_gb0, imp_gb2, file = here::here("data", "output", "model_output_sagehen.RData"))
+save(model_clim0, model_clim2, imp_clim0, imp_clim2,  
+     file = here::here("data", "output", "model_output_sagehen.RData"))
 ```
 
 Run the following code chunk to launch the Shiny app (note you will have to set `run_app` to TRUE):

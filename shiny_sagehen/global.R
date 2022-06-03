@@ -6,7 +6,7 @@
 #
 # Use this version if you have two scenarios that are being compared. The app is 
 # currently designed to work given 4 datasets - df_raw, df, df_clim0, and df_clim2. Additionally,
-# given 2 random forest models - rf_clim0 and rf_clim2. If these names are replaced in the workflow,
+# given 2 random forest models - model_clim0 and model_clim2. If these names are replaced in the workflow,
 # they will also need to be updated in the global.R, server.R, and ui.R files for the
 # Shiny app within the shiny folder to run properly.
 #
@@ -90,10 +90,10 @@ metadata <- readRDS(here::here("shiny_sagehen", "metadata.RDS")) %>%
 
 # Create reduced data frames from the random forest models
 df_clim0_reduced <- df_clim0 %>%
-  select(c(rownames(rf_clim0$finalModel$importance)))
+  select(c(rownames(model_clim0$finalModel$importance)))
 
 df_clim2_reduced <- df_clim2 %>%
-  select(c(rownames(rf_clim2$finalModel$importance)))
+  select(c(rownames(model_clim2$finalModel$importance)))
 
 
 ######### Text for the welcome page ########## 

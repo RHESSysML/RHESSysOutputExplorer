@@ -305,27 +305,31 @@ The best `mtry` value for each data set is used for the respective random forest
 ### Random Forest Models
 
 ```{r get_random_forests}
-rf_clim0 <- train(x = df_clim0_reduced %>% select(!response),
-                y = df_clim0_reduced$response,
-                method = 'rf',
-                .mtry = bestmtry0,
-                ntree = 500,
-                importance = TRUE,
-                replace = TRUE,
-                keep.forest = TRUE,  # necessary for permimp
-                keep.inbag = TRUE,  # necessary for permimp
-                trControl = trainControl(method = "none", seed = 4326)) # to use 10-fold cross validation, method = "cv", number = 10
+model_clim0 <- train(
+  x = df_clim0_reduced %>% select(!response),
+  y = df_clim0_reduced$response,
+  method = "rf",
+  .mtry = bestmtry0,
+  ntree = 500,
+  importance = TRUE,
+  replace = TRUE,
+  keep.forest = TRUE, # necessary for permimp
+  keep.inbag = TRUE, # necessary for permimp
+  trControl = trainControl(method = "none", seed = 4326)
+) # to use 10-fold cross validation, method = "cv", number = 10
 
-rf_clim2 <- train(x = df_clim2_reduced %>% select(!response),
-                y = df_clim2_reduced$response,
-                method = 'rf',
-                .mtry = bestmtry2,
-                ntree = 500,
-                importance = TRUE,
-                replace = TRUE,
-                keep.forest = TRUE,  # necessary for permimp
-                keep.inbag = TRUE,  # necessary for permimp
-                trControl = trainControl(method = "none", seed = 4326)) # to use 10-fold cross validation, method = "cv", number = 10
+model_clim2 <- train(
+  x = df_clim2_reduced %>% select(!response),
+  y = df_clim2_reduced$response,
+  method = "rf",
+  .mtry = bestmtry2,
+  ntree = 500,
+  importance = TRUE,
+  replace = TRUE,
+  keep.forest = TRUE, # necessary for permimp
+  keep.inbag = TRUE, # necessary for permimp
+  trControl = trainControl(method = "none", seed = 4326)
+) # to use 10-fold cross validation, method = "cv", number = 10
 ```
 
 Assessing feature importance is a complex task with many possible approaches. Tree based models like random forest offer convenient "split-improvement" measures, like mean increase in purity and minimum depth, which are intrinsically derived during model construction. However, these have been shown to be biased towards variables with many categories or large value ranges (Strobl et al. 2007). Despite some of their shortcomings, these importance measures can provide insights are further explored at the end of this document.
@@ -341,12 +345,12 @@ As the primary measure of importance we instead use partial permutation importan
 4. Importance of the permuted variable is deemed to be the mean loss in accuracy when its values were permuted.
 
 ```{r variable_importance}
-imp_clim0 <- varImp(rf_clim0$finalModel, scale = FALSE) %>% 
+imp_clim0 <- varImp(model_clim0$finalModel, scale = FALSE) %>% 
   rownames_to_column("Variable") %>% 
   mutate(Rank = rank(-Overall)) %>% 
   arrange(Rank)
 
-imp_clim2 <- varImp(rf_clim2$finalModel, scale = FALSE) %>% 
+imp_clim2 <- varImp(model_clim2$finalModel, scale = FALSE) %>% 
   rownames_to_column("Variable") %>% 
   mutate(Rank = rank(-Overall)) %>% 
   arrange(Rank)
@@ -360,17 +364,17 @@ The following section provides visualizations and statistics to evaluate the ran
 Calling the random forest shows a summary of the results, including percent variance explained.
 
 ```{r}
-rf_clim0_fit <- round(tail(rf_clim0$finalModel$rsq, 1)*100, 2)
+rf_clim0_fit <- round(tail(model_clim0$finalModel$rsq, 1)*100, 2)
 
-rf_clim0$finalModel
+model_clim0$finalModel
 ```
 
 The model for the base climate scenario explained `r rf_clim0_fit`% of variance in NPP.
 
 ```{r}
-rf_clim2_fit <- round(tail(rf_clim2$finalModel$rsq, 1)*100, 2)
+rf_clim2_fit <- round(tail(model_clim2$finalModel$rsq, 1)*100, 2)
 
-rf_clim2$finalModel
+model_clim2$finalModel
 ```
 
 The model for the +2 degree Celsius climate scenario explained `r rf_clim2_fit`% of variance in NPP.
@@ -410,9 +414,8 @@ The capstone team created an application with a suite of interactive visualizati
 First, the following objects are saved for use in the app.
 
 ```{r save_model_output}
-save(rf_clim0, rf_clim2, imp_clim0, imp_clim2, file = here::here("data", 
-                                                                 "output", 
-                                                                 "model_output_sagehen.RData"))
+save(model_clim0, model_clim2, imp_clim0, imp_clim2, 
+     file = here::here("data", "output", "model_output_sagehen.RData"))
 ```
 
 ```{r}

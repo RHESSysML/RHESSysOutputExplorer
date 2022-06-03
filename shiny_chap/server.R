@@ -191,7 +191,7 @@ server <- function(input, output) {
   # Create 3D partial dependence plot
   output$partial_dep_plot <- renderPlotly({
     plotly_partial_dependence(
-      x = rf$finalModel,
+      x = model$finalModel,
       pred.data = df_reduced,
       v1 = input$partial_dep_var1,
       v2 = input$partial_dep_var2,
