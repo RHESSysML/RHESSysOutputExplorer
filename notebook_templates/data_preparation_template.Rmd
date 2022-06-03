@@ -194,6 +194,6 @@ Here we save all dataframes created during this process.
 Note: `save.image()` saves all objects currently in the RStudio environment, so if you have objects loaded unrelated to this workflow they will be saved in the file created below as well.
 
 ```{r}
-save.image(here::here("data", "input", "prepared_data_test.RData"))
+save.image(here::here("data", "input", "prepared_data.RData"))
 ```
 

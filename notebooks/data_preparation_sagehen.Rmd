@@ -10,7 +10,6 @@ knitr::opts_chunk$set(echo = TRUE)
 
 library(tidyverse)
 library(here)
-library(RHESSysIOinR)
 ```
 
 # Data Preparation
@@ -18,7 +17,7 @@ library(RHESSysIOinR)
 ## Load Data
 
 ```{r load_data, message = FALSE}
-df_raw <- readRDS(here::here("data", "input", "chapSUpar17_basin.RDS")) 
+df_raw <- readRDS(here::here("data", "input", "sagehen.RDS")) 
 ```
 
 ## Clean and Aggregate Data
@@ -41,17 +40,10 @@ The `factor_vars` object are the predictor variables that will be converted to f
 
 The `response_var` object is the response variable that the user wants to predict. There should only be one response variable.
 
-```{r}
-# Adding water year
-df_raw <- add_dates(df_raw) %>% 
-  select(-yd)
-```
-
-
 ```{r user_inputs}
-group_cols <- c("wy", "basinID")
-factor_vars <- c("basinID")
-response_var <- "plantc"
+group_cols <- c("wy", "stratumID", "clim", "scen", "topo")
+factor_vars <- c("stratumID", "clim", "scen", "topo")
+response_var <- "npp"
 ```
 
 ```{r input_tests}
@@ -72,7 +64,7 @@ for (column in factor_vars) {
   if (num_categories > 50) {
     warning(paste(column, "has", num_categories, "categories, should this column be numeric?"))
   }
-  rm(num_categories, column)
+  rm(column, num_categories)
 }
 ```
 
@@ -123,27 +115,20 @@ df_raw[,factor_vars] <- lapply(df_raw[,factor_vars], factor)
 
 ```
 
-This code chunk is where you add your own derived variables that may be important to your analysis. If you wish to aggregate your data in a way different than in our example, this is also the code chunk to do that in.
-
-Below, we do not create any derived variables, aggregate by water year and basinID, then remove unwanted variables.
+Next, for our example, there were some changes that needed to be made that may or may not apply to your dataset. For this example, we are changing `slope` and `aspect` from radians to degrees, aggregating by water year, and adding two derived variables: `peak_swe` and `swe_precip_ratio`. We decided to create columns for `peak_swe` and `swe_precip_ratio` because we thought they would be important variables in determining the response variable in our example, which was net primary productivity. This code chuck is where you add your own derived variables that may be important to your analysis. If you wish to aggregate your data in a way different than in our example, this is also the code chunk to do that in.
 
 ```{r prepare_data}
 # Rename chosen response variable to "response"
 df_raw <- df_raw %>% 
   rename("response" = response_var)
 
-no_var = c()
-for (col in colnames(df_raw)) {
-  if (is.numeric(df_raw[, col])) {
-    if (var(df_raw[, col]) == 0) {
-      no_var <- append(no_var, col)
-    }
-  }
-}
-df_raw <- df_raw %>% select(-all_of(no_var))
+# Change aspect and slope from radians to degrees
+df <- df_raw %>% 
+  mutate(aspect = aspect*(180/pi),
+         slope = slope*(180/pi))
 
 # Group by chosen columns
-df <- df_raw %>%   
+df <- df %>%   
   group_by(across(all_of(group_cols)))
 
 # Aggregate average temperatures using the aggregate_temp() function defined above.
@@ -151,13 +136,15 @@ df <- aggregate_temp(df, 'season')
 
 # Create features for peak swe and the peak_swe/precip ratio
 df <- df %>% 
+  mutate(peak_swe = max(swe)) %>%
+  mutate(swe_precip_ratio = peak_swe/sum(precip)) %>% 
   summarise_if(is.numeric, mean) %>% 
   ungroup()
 
 # Reorder response variables first and remove any unwanted variables
 df <- df %>% 
   select(response, everything()) %>%
-  select(-c(wy, day, month, year, basinID))
+  select(-c(tavg, day, month, year, basinID, hillID, zoneID, patchID))
 ```
 
 Here, we split our data into two separate data frames, one for each climate scenario. This will allow us to analyze the impact of  climate on variable importance by calculating different importance ranks for each climate scenario, and comparing how each variable gains or loses importance in a warming climate.
@@ -166,19 +153,15 @@ This is an optional split: the `clim` variable could have been left as a column 
 
 
 ```{r split_data}
-if ("clim" %in% names(df)) {
+# Create data frame with only climate scenario 0
+df_clim0 <- df %>% 
+  filter(clim == 0) %>% 
+  select(-c(clim, wy))
 
-  # Create data frame with only climate scenario 0
-  df_clim0 <- df %>% 
-    filter(clim == 0) %>% 
-    select(-c(clim, wy))
-  
-  # Create data frame with only climate scenario 2
-  df_clim2 <- df %>% 
-    filter(clim == 2) %>% 
-    select(-c(clim, wy))
-  
-}  
+# Create data frame with only climate scenario 2
+df_clim2 <- df %>% 
+  filter(clim == 2) %>% 
+  select(-c(clim, wy))
 ```
 
 Now, we have two data tables representing the two climate scenarios.
@@ -186,6 +169,6 @@ Now, we have two data tables representing the two climate scenarios.
 Along with this workflow, this repo also contains a Shiny App. The Shiny App can be used post-analysis to graph some of the relationships that are identified within this feature selection workflow. Here we'll save the newly aggregated datasets to be automatically exported into the Shiny App.
 
 ```{r}
-save.image(here::here("data", "input", "prepared_data_standard.RData"))
+save.image(here::here("data", "input", "prepared_data_sagehen.RData"))
 ```
 

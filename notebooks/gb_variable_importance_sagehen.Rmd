@@ -55,7 +55,7 @@ Note that this workflow will use data that is aggregated by water year but **not
 ## Load Data
 
 ```{r}
-load(here::here("data", "input", "prepared_data.RData"))
+load(here::here("data", "input", "prepared_data_sagehen.RData"))
 ```
 
 First, we want to get a summary description of the data set. This is crucial for many reasons:
@@ -452,7 +452,7 @@ The capstone team created an application with a suite of interactive visualizati
 First, the following objects are saved for use in the app.
 
 ```{r save_model_output}
-save(imp_gb0, imp_gb2, file = here::here("data", "output", "gb_model_output.RData"))
+save(imp_gb0, imp_gb2, file = here::here("data", "output", "model_output_sagehen.RData"))
 ```
 
 Run the following code chunk to launch the Shiny app (note you will have to set `run_app` to TRUE):
@@ -461,6 +461,6 @@ Run the following code chunk to launch the Shiny app (note you will have to set 
 run_app <- FALSE
 
 if (run_app == TRUE) {
-  shiny::runApp(here::here("shiny"))
+  shiny::runApp(here::here("shiny_sagehen"))
 }
 ```

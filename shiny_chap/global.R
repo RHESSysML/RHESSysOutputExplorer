@@ -57,8 +57,8 @@ setwd(here::here())
 
 # Datasets and Variable Importance Results --------------------------------
 
-load(here::here("data", "input", "prepared_data_standard.RData"))
-load(here::here("data", "output", "model_output_standard.RData"))
+load(here::here("data", "input", "prepared_data_chap.RData"))
+load(here::here("data", "output", "model_output_chap.RData"))
 
 # Rename response columns
 df_raw <- df_raw %>% 
@@ -74,7 +74,7 @@ all_datasets <- c("df_raw", "df")
 
 # Metadata Table ----------------------------------------------------------
 
-metadata <- readRDS(here::here("shiny", "metadata.RDS")) %>%
+metadata <- readRDS(here::here("shiny_chap", "metadata.RDS")) %>%
   select("variable", "full_name", "units", "description") %>%
   as.data.frame()
 

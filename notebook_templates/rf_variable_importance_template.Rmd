@@ -285,7 +285,7 @@ The capstone team created an application with a suite of interactive visualizati
 First, the following objects are saved for use in the app.
 
 ```{r save_model_output}
-save(rf, imp, file = here::here("data", "output", "model_output_standard.RData"))
+save(rf, imp, file = here::here("data", "output", "model_output.RData"))
 ```
 
 ```{r}
