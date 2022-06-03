@@ -278,15 +278,12 @@ xhot2 = x2 %>% data.table::data.table() %>% mltools::one_hot(cols = df_clim2_fpr
 
 There is a bit more complexity that goes into tuning a Gradient Boosting model than a Random Forest. The `expand.grid()` function will allow us to test multiple values of each parameter to optimize model performance. Some of the standard hyperparameters that we will tune here are:
 
- - `nrounds` (# Boosting Iterations)
- - `max_depth` (Max Tree Depth)
- - `eta` (Shrinkage)
- - `gamma` (Minimum Loss Reduction)
- - `colsample_bytree` (Subsample Ratio of Columns)
- - `min_child_weight` (Minimum Sum of Instance Weight)
- - `subsample` (Subsample Percentage)
+ - `n.trees` (Number of Trees)
+ - `interaction_depth` (Maximum Nodes Per Tree)
+ - `shrinkage` (Shrinkage/Learning Rate)
+ - `n.minobsinnode` (Minimum Observations in Terminal Nodes)
  
-Out of all these parameters, all except `nrounds` are used to prevent overfitting, which is a more common problem in boosting models than random forests. The inherent randomness of random forests prevents overfitting relatively effectively, but more care is required with gradient boosting. For example, the `colsample_bytree` parameter mimics the functionality of a random forest model by randomly sampling the specified proportions of columns to build a boosted tree.
+All these parameters are used to prevent overfitting, which is a more common problem in boosting models than random forests. The inherent randomness of random forests prevents overfitting relatively effectively, but more care is required with gradient boosting. For example, the `colsample_bytree` parameter mimics the functionality of a random forest model by randomly sampling the specified proportions of columns to build a boosted tree.
 
 Additionally, we will use `trainControl()` to implement 10-fold cross-validation to further avoid overfitting.
 
