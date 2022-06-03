@@ -1,5 +1,5 @@
 ---
-title: "Feature Selection Framework"
+title: "Variable Importance Template"
 author: "RHESSysML Capstone Group"
 date: "2/5/2022"
 output: 
@@ -12,19 +12,22 @@ output:
 
 # Introduction
 
-[RHESSys](https://github.com/RHESSys/RHESSys/wiki) output provides multiple variables that describe the response of  ecosystem biogeochemical cycling and hydrology to climate (and land use) drivers. This R Markdown document describes a workflow to apply machine learning techniques (Random Forest and Gradient Boosting) to RHESSys model output. The specific goal is to determine the most important relationships between RHESSys predictor variables and a chosen response variable in a programmatic, efficient, and reproducible manner. Permutation Importance will be our primary metric for what determines the importance of variables within each machine learning model, but additional metrics will be discussed to help you choose whether Random Forest or Gradient Boosting is a more appropriate class of model to use.
+[RHESSys](https://github.com/RHESSys/RHESSys/wiki) output provides multiple variables that describe the response of ecosystem biogeochemical cycling and hydrology to climate (and land use) drivers. This R Markdown document describes a workflow to apply machine learning techniques to RHESSys model output. This particular notebook uses random forest---see the other document for gradient boosting. The specific goal is to determine the most important relationships between RHESSys predictor variables and a chosen response variable in a programmatic, efficient, and reproducible manner. This is done by assessing variable importance within random forest models and the metric: permutation importance. 
 
-If you don’t know what Permutation Importance is right now, don’t worry! This workflow is written with ecologists in mind, not machine learning engineers or computer scientists. The details of Random Forest, Gradient Boosting, and Permutation Importance will be explained throughout the course of the document.
+No machine learning experience is required to make use of this workflow---the details of random forest and permutation importance will be explained throughout the course of the document.
 
-Specific code examples in this document will be based on RHESSys model output from the Sagehen Creek Experimental Watershed in the Sierra Nevada, CA. The data set incorporates model parameter uncertainty and topographic variability under two separate climate warming scenarios: (1) Historic temperature levels, and (2) Two degrees Celsius warming. The dataset and associated metadata can be accessed [here](https://www.hydroshare.org/resource/2a31bd57b7e74c758b7857679ffbb4c5/). 
+## Data Preparation Step:
 
-The code below is written with Net Primary Productivity (NPP) as the response variable of interest: this means that the output of this example will offer an answer to the question: What are the most important hydroecological factors that affect NPP in an ecosystem like Sagehen Creek, _and how might that relative importance change in a warming climate?_
+If you have not already, use the `data_preparation_template.Rmd` to prepare your data before working through this notebook.
+
 
 # Setup
 
 ## renv:
 
 To help ensure reproducibility, the packages and package versions used to build this workflow have been saved via [`renv`](https://rstudio.github.io/renv/articles/renv.html). To download any missing packages and load the correct versions, run the command `renv::restore()` in the console. Doing so will not impact your package versions outside of this R Project. It may take several minutes depending on the number of discrepancies.
+
+## Load Packages
 
 ```{r setup, include = TRUE, warning=FALSE, message=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
@@ -50,49 +53,27 @@ library(rfUtilities)
 library(randomForestExplainer)
 ```
 
+# Data
+
+## Load Prepared Data
+
+Here, we load the data files created in the `data_preparation_template.Rmd`.
+
 ```{r}
 load(here::here("data", "input", "prepared_data.RData"))
 ```
 
+## Summarize Data
 
-# Data Description
+Next, we want to get a summary description of the data set. This step can be used to check if any variables do not have the expected range, magnitude, class, etc.
 
-Next, we want to get a summary description of the data set. This is crucial for many reasons:
-
-1.  Shows early on in the process if any variables do not have the expected range, magnitude, class, etc.
-
-2.  Provides information on data set characteristics that are important for decisions later on in the machine learning process.
-
-Here, we display summary statistics for the base climate scenario data.
 
 ```{r describe_data}
 source(here::here("R", "summarize_data.R"))
 
-summarize_data(df_clim0)
-summarize_data(df_clim2)
+summarize_data(df)
 ```
 
-We can also look at the key study area characteristics. In this Sagehen Creek study area, there are six landscape positions where RHESSys was run.
-
-```{r describe_strata}
-strata <- df %>%
-  filter(clim == 0) %>% 
-  select(c(stratumID, topo, elev, aspect, slope)) %>%
-  group_by(stratumID, topo) %>% 
-  summarize_if(is.numeric, mean) %>% 
-  mutate(topo = case_when(topo == "M" ~ "Mid-Slope",
-                          topo == "U" ~ "Upslope",
-                          topo == "R" ~ "Riparian")) %>%
-  dplyr::arrange(topo) %>%
-  rename("Stratum" = stratumID,
-         "Topo" = topo,
-         "Elevation (m)" = elev,
-         "Aspect (degrees CCW from East)" = aspect,
-         "Slope (degrees)" = slope)
-
-DT::datatable(strata,
-              caption = "Summary of 6 landscape positions in the Sagehen Creek study area")
-```
 
 # Remove Multicollinearity
 
@@ -111,19 +92,11 @@ Similarly, the `auto_cor()` function works by computing a correlation matrix for
 First, we create data frames containing only the predictor variables to assist with the next steps.
 
 ```{r get_predictors}
-# Save data frames of predictor variables for first climate scenario
-df_clim0_num_preds <- df_clim0 %>% 
+# Save data frames of predictor variables
+df_num_preds <- df %>% 
   select(!response & where(is.numeric))
 
-df_clim0_fpreds <- df_clim0 %>% 
-  select(!response & where(is.factor)) %>% 
-  colnames()
-
-# Save data frames of predictor variables for second climate scenario
-df_clim2_num_preds <- df_clim2 %>% 
-  select(!response & where(is.numeric))
-
-df_clim2_fpreds <- df_clim2 %>% 
+df_fpreds <- df %>% 
   select(!response & where(is.factor)) %>% 
   colnames()
 ```
@@ -135,40 +108,22 @@ Below, there are two methods for setting preference order: (1) Manually creating
 ```{r manual_preference_order}
 # Preference order can be determined manually for variables of interest:
 
-#pref_order0 <- c("precip", "rz_storage", "trans", "evap")
-#pref_order2 <- c("precip", "rz_storage", "trans", "evap")
+#pref_order <- c("precip", "rz_storage", "trans", "evap")
 ```
 
-2. Run this chunk to allow preliminary random forest to automatically determine preference order.
+2. Run this chunk to allow a preliminary random forest to automatically determine preference order.
 
 ```{r auto_preference_order, warning=FALSE}
-# First climate scenario
-
 # Find preliminary importance using random forest
-prelim_imp_clim0 <- train(x = df_clim0 %>% select(!response),
-              y = df_clim0$response,
+prelim_imp <- train(x = df %>% select(!response),
+              y = df$response,
               method = 'rf',
               importance = TRUE,
               replace = TRUE,
               trControl = trainControl(method = "none", seed = 4326))
 
 # Set preference order based on variable importance
-pref_order0 <- varImp(prelim_imp_clim0$finalModel, scale = FALSE) %>% 
-  arrange(-Overall) %>% 
-  rownames()
-
-# Second climate scenario
-
-# Find preliminary importance using random forest
-prelim_imp_clim2 <- train(x = df_clim2 %>% select(!response),
-              y = df_clim2$response,
-              method = 'rf',
-              importance = TRUE,
-              replace = TRUE,
-              trControl = trainControl(method = "none", seed = 4326))
-
-# Set preference order based on variable importance
-pref_order2 <- varImp(prelim_imp_clim2$finalModel, scale = FALSE) %>% 
+pref_order <- varImp(prelim_imp$finalModel, scale = FALSE) %>% 
   arrange(-Overall) %>% 
   rownames()
 ```
@@ -177,34 +132,23 @@ Thresholds for VIF and correlation can be set below, with default values of 5 an
 
 ```{r set_thresholds}
 vif.threshold = 5
-cor.threshold = 0.75
+cor.threshold = 0.8
 ```
 
 ```{r remove_multicollinearity, warning = FALSE}
 source(here::here("R", "remove_vif.R"))
 source(here::here("R", "remove_cor.R"))
 
-# Create list of selected variables
-clim0_vif <- remove_vif(df_clim0_num_preds, vif.threshold = vif.threshold, pref_order0)$selected.variables
-clim0_cor <- remove_cor(df_clim0_num_preds, cor.threshold = cor.threshold, pref_order0)$selected.variables
-clim0_select_variables <- intersect(clim0_vif, clim0_cor)
+# Identifying variables with correlations or VIF above given thresholds
+vif_cor <- remove_cor(df_num_preds, cor.threshold = cor.threshold, pref_order) %>% 
+  remove_vif(vif.threshold = vif.threshold, pref_order)
 
-clim2_vif <- remove_vif(df_clim2_num_preds, vif.threshold = vif.threshold, pref_order2)$selected.variables
-clim2_cor <- remove_cor(df_clim2_num_preds, cor.threshold = cor.threshold, pref_order2)$selected.variables
-clim2_select_variables <- intersect(clim2_vif, clim2_cor)
-
-# Combine selected variables with factors
-df_clim0_preds <- c(all_of(df_clim0_fpreds), all_of(clim0_select_variables))
-df_clim2_preds <- c(all_of(df_clim2_fpreds), all_of(clim2_select_variables))
+select_variables <- vif_cor$selected.variables
 
 # Remove numeric variables with multicollinearity
-df_clim0_reduced <- df_clim0 %>% 
-  select(c(response, all_of(df_clim0_preds)))
-
-df_clim2_reduced <- df_clim2 %>% 
-  select(c(response, all_of(df_clim2_preds)))
+df_reduced <- df %>% 
+  select(c(response, all_of(df_fpreds), all_of(select_variables)))
 ```
-
 
 ## Summary of Removed Variables
 
@@ -216,42 +160,25 @@ source(here::here("R", "summarize_var_removal.R"))
 source(here::here("R", "plot_removed_cor.R"))
 ```
 
-
 The following functions output summary tables and plots showing variable selection status and the values of VIF, correlation, and importance which led to those selections. 
 
-### Climate Scenario 0 {.tabset}
+### Summary Tables {.tabset}
 
 #### Variable Removal Summary Table
 
 ```{r vif_summary_table_0, warning=FALSE}
-summarize_var_removal(df_clim0, clim0_select_variables, prelim_imp_clim0, table = TRUE)
+summarize_var_removal(df, select_variables, prelim_imp, table = TRUE)
 ```
 
 #### Cor Summary Plot
 
 ```{r}
-plot_removed_cor(clim0_select_variables, df_clim0_num_preds)
+plot_removed_cor(select_variables, df_num_preds)
 ```
-
-
-### Climate Scenario 2 {.tabset}
-
-#### Variable Removal Summary Table
-
-```{r vif_summary_table_2, warning=FALSE}
-summarize_var_removal(df_clim2, clim2_select_variables, prelim_imp_clim2, table = TRUE)
-```
-
-#### Cor Summary Plot
-
-```{r}
-plot_removed_cor(clim2_select_variables, df_clim2_num_preds)
-```
-
 
 # Feature Importance with Random Forest
 
-With multicollinearity reduced, the importance of predictor variables can be estimated using Random Forest and partial permutation importance. In this framework, we use Random Forest because it has been shown to be an effective tool in assessing feature importance in numerous applications including ecological analysis (Cutler et al. 2007; Prasad et al. 2006). Additionally, Random Forest requires relatively less hyper-parameter tuning than other common techniques such as gradient boosting, which is explored in separate workflows. 
+With multicollinearity reduced, the importance of predictor variables can be estimated using random forest and partial permutation importance. In this framework, we use random forest because it has been shown to be an effective tool in assessing feature importance in numerous applications including ecological analysis (Cutler et al. 2007; Prasad et al. 2006). Additionally, random forest requires relatively less hyper-parameter tuning than other common techniques such as gradient boosting, which is explored in separate workflows. 
 
 ### Hyper-Parameter Tuning
 
@@ -262,64 +189,37 @@ The `mtry` parameter determines the number of variables randomly sampled as cand
 The function below creates a vector of accuracy results of random forests using different values for `mtry`.
 
 ```{r tuning_function}
-df_clim0_reduced <- as.data.frame(df_clim0_reduced)
-df_clim2_reduced <- as.data.frame(df_clim2_reduced)
+df_reduced <- as.data.frame(df_reduced)
 ```
 
-Next, we run the function for both climate scenario data sets and visualize the results. Model error here is assessed using out-of-bag (OOB) observations in the data, which refers to observations that were not sampled during bootstrapping for the particular Random Forest being assessed. In other words OOB data were not used to train the model and can be used to test accuracy without the risk of bias incurred from model over-fitting. The best `mtry value` in the plots below will be represented by the lowest `OOB Error`.
+Next, we run the function for both climate scenario data sets and visualize the results. Model error here is assessed using out-of-bag (OOB) observations in the data, which refers to observations that were not sampled during bootstrapping for the particular random forest being assessed. In other words OOB data were not used to train the model and can be used to test accuracy without the risk of bias incurred from model over-fitting. The best `mtry value` in the plots below will be represented by the lowest `OOB Error`.
 
-```{r tune_rf_clim0, warning = FALSE}
+```{r tune_rf, warning = FALSE}
 source(here::here("R", "tune_rf_model.R"))
 
 set.seed(4326)
 
-mtry0 <- tune_rf_model(df_clim0_reduced)
-bestmtry0 <- match(min(mtry0), mtry0)
-ggplot(data = as.data.frame(mtry0), aes(x = 1:length(mtry0), y = mtry0)) +
-  geom_vline(xintercept = bestmtry0, linetype = "dashed") +
+mtry <- tune_rf_model(df_reduced)
+bestmtry <- match(min(mtry), mtry)
+ggplot(data = as.data.frame(mtry), aes(x = 1:length(mtry), y = mtry)) +
+  geom_vline(xintercept = bestmtry, linetype = "dashed") +
   geom_point() +
   geom_line() +
   theme_light() +
   labs(x = "mtry value",
        y = "OOB Error",
-       title = paste0("The best mtry value for ", deparse(substitute(df_clim0_reduced)), " is ", bestmtry0))
+       title = paste0("The best mtry value for ", deparse(substitute(df_reduced)), " is ", bestmtry))
 ```
 
-```{r tune_rf_clim2, warning = FALSE}
-set.seed(4326)
-
-mtry2 <- tune_rf_model(df_clim2_reduced)
-bestmtry2 <- match(min(mtry2), mtry2)
-ggplot(data = as.data.frame(mtry2), aes(x = 1:length(mtry2), y = mtry2)) +
-  geom_vline(xintercept = bestmtry2, linetype = "dashed") +
-  geom_point() +
-  geom_line() +
-  theme_light() +
-  labs(x = "mtry value",
-       y = "OOB Error",
-       title = paste0("The best mtry value for ", deparse(substitute(df_clim2_reduced)), " is ", bestmtry2))
-```
-
-The best `mtry` value for each data set is used for the respective random forest model below.
+The best `mtry` value is used random forest model below.
 
 ### Random Forest Models
 
 ```{r get_random_forests}
-rf_clim0 <- train(x = df_clim0_reduced %>% select(!response),
-                y = df_clim0_reduced$response,
+rf <- train(x = df_reduced %>% select(!response),
+                y = df_reduced$response,
                 method = 'rf',
-                .mtry = bestmtry0,
-                ntree = 500,
-                importance = TRUE,
-                replace = TRUE,
-                keep.forest = TRUE,  # necessary for permimp
-                keep.inbag = TRUE,  # necessary for permimp
-                trControl = trainControl(method = "none", seed = 4326)) # to use 10-fold cross validation, method = "cv", number = 10
-
-rf_clim2 <- train(x = df_clim2_reduced %>% select(!response),
-                y = df_clim2_reduced$response,
-                method = 'rf',
-                .mtry = bestmtry2,
+                .mtry = bestmtry,
                 ntree = 500,
                 importance = TRUE,
                 replace = TRUE,
@@ -336,20 +236,14 @@ As the primary measure of importance we instead use partial permutation importan
 
 2. Permute the values of a given variable.
 
-3. Feed the dataset with the permuted values into the Random Forest and reassess model accuracy.
+3. Feed the dataset with the permuted values into the random forest and reassess model accuracy.
 
-4. Importance of the permuted variable is deemed to be the mean loss in accuracy when its values were permuted.
+4. Importance of the permuted variable is deemed to be the mean loss in accuracy when its values were permuted. 
 
 ```{r variable_importance}
-imp_clim0 <- varImp(rf_clim0$finalModel, scale = FALSE) %>% 
+imp <- varImp(rf$finalModel, scale = FALSE) %>% 
   rownames_to_column("Variable") %>% 
-  mutate(Rank = rank(-Overall)) %>% 
-  arrange(Rank)
-
-imp_clim2 <- varImp(rf_clim2$finalModel, scale = FALSE) %>% 
-  rownames_to_column("Variable") %>% 
-  mutate(Rank = rank(-Overall)) %>% 
-  arrange(Rank)
+  mutate(Rank = rank(-Overall))
 ```
 
 
@@ -357,49 +251,30 @@ imp_clim2 <- varImp(rf_clim2$finalModel, scale = FALSE) %>%
 
 The following section provides visualizations and statistics to evaluate the random forest performance.
 
-Calling the random forest shows a summary of the results, including percent variance explained.
+First, simply calling the random forest shows a summary of the results, including percent variance explained.
 
 ```{r}
-rf_clim0_fit <- round(tail(rf_clim0$finalModel$rsq, 1)*100, 2)
+rf_fit <- round(tail(rf$finalModel$rsq, 1)*100, 2)
 
-rf_clim0$finalModel
+rf$finalModel
 ```
 
-The model for the base climate scenario explained `r rf_clim0_fit`% of variance in NPP.
-
-```{r}
-rf_clim2_fit <- round(tail(rf_clim2$finalModel$rsq, 1)*100, 2)
-
-rf_clim2$finalModel
-```
-
-The model for the +2 degree Celsius climate scenario explained `r rf_clim2_fit`% of variance in NPP.
+The above model explained `r rf0_fit`% of variance in the response variable.
 
 
 # Visualize Results
 
 Now, we can visualize the results of the random forest feature selection.
 
-The following table shows the relative importance of predictor variables between the two climate scenarios.
-
-```{r}
-source(here::here("R", "df_imp_table.R"))
-
-df_imp_table(imp_clim0, imp_clim2)
-```
-
-We see that precipitation and rz_storage are the first and second most important predictors of NPP for both climate scenarios. The highest difference is evaporation - which is third most important for the base climate scenario and sixth for the +2 degree Celsius warming scenario. This indicates that the relationship between NPP and evaporation has changed given warming, which could be investigated further. This process can be repeated for all other observations found in the table.
-
-This same information is plotted below. The variable importance plots also reveal relative magnitude of importance between variables. 
+Variable importance plots display relative magnitude of importance between variables.
 
 ```{r plot_imp}
 source(here::here("R", "plot_imp.R"))
 
-clim0_plot <- plot_imp(imp_clim0)
-clim2_plot <- plot_imp(imp_clim2)
-
-clim0_plot + clim2_plot 
+plot <- plot_imp(imp)
+plot
 ```
+
 
 # Further Exploration
 
@@ -410,7 +285,7 @@ The capstone team created an application with a suite of interactive visualizati
 First, the following objects are saved for use in the app.
 
 ```{r save_model_output}
-save(rf_clim0, rf_clim2, imp_clim0, imp_clim2, file = here::here("data", "output", "model_output.RData"))
+save(rf, imp, file = here::here("data", "output", "model_output_standard.RData"))
 ```
 
 ```{r}
@@ -435,9 +310,10 @@ To run the explainer, just set the `run_explainer` object below to `TRUE`. It wi
 run_explainer <- FALSE
 
 if (run_explainer == TRUE) {
-  randomForestExplainer::explain_forest(rf_clim0, path = here::here("docs", "forest_explained.html"))
+  randomForestExplainer::explain_forest(rf0, path = here::here("docs", "forest_explained.html"))
 }
 ```
+
 
 
 # References

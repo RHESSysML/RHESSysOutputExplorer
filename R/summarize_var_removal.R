@@ -1,4 +1,4 @@
-#'@title Summarize removed variables
+#'@title Summarize variable removal process
 #'
 #'@description Given "reduced" dataframe of predictor variables, returns a dataframe or formatted datatable with summary information associated with multicollinearity removal
 #'
@@ -8,18 +8,7 @@
 #' @return dataframe or datatable containing the following values for all predictor variables: removed/selected status, importance rank, and VIF
 #' @export
 #'
-summarize_var_removal <- function(input_df, clim = NULL, table = TRUE, plot_prep = FALSE) {
-  
-  if (is.null(clim) == TRUE) {
-    df_name <- as.character(input_df)
-  } 
-  else {
-    df_name <- deparse(substitute(input_df))
-    clim_id <- paste0("clim", clim)
-    select_variables <- get(paste0(clim_id, "_select_variables"))
-    prelim_imp <- get(paste0("prelim_imp_clim", clim))
-    df <- get(paste0("df_clim", clim))
-  }
+summarize_var_removal <- function(df, select_variables, prelim_imp, table = TRUE) {
   
   
   removed_importance <- prelim_imp$finalModel["importance"] %>% 
