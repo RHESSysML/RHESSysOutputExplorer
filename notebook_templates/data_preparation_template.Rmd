@@ -73,6 +73,7 @@ for (column in factor_vars) {
   if (num_categories > 50) {
     warning(paste(column, "has", num_categories, "categories, should this column be numeric?"))
   }
+  rm(num_categories, column)
 }
 ```
 
