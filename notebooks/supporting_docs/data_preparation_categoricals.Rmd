@@ -94,6 +94,6 @@ df_cats <- df_cats %>%
 ```
 
 ```{r}
-save.image(here::here("data", "input", "sagehen_cats.RData"))
+save.image(here::here("data", "supporting_docs_data", "sagehen_cats.RData"))
 ```
 
