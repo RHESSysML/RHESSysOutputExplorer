@@ -124,7 +124,7 @@ Here is where the categorical variables from the `factor_vars` object (explained
 
 ```{r convert_to_factors}
 # Convert categorical variables to factors
-df_raw[,factor_vars] <- lapply(df_raw[,factor_vars], factor)
+df_raw[,factor_vars] <- sapply(df_raw[,factor_vars], factor)
 
 ```
 
