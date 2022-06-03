@@ -12,19 +12,22 @@ output:
 
 # Introduction
 
-[RHESSys](https://github.com/RHESSys/RHESSys/wiki) output provides multiple variables that describe the response of ecosystem biogeochemical cycling and hydrology to climate (and land use) drivers. This R Markdown document describes a workflow to apply machine learning techniques (random forest and gradient boosting) to RHESSys model output. The specific goal is to determine the most important relationships between RHESSys predictor variables and a chosen response variable in a programmatic, efficient, and reproducible manner. permutation importance will be our primary metric for what determines the importance of variables within each machine learning model, but additional metrics will be discussed to help you choose whether random forest or gradient boosting is a more appropriate class of model to use.
+[RHESSys](https://github.com/RHESSys/RHESSys/wiki) output provides multiple variables that describe the response of ecosystem biogeochemical cycling and hydrology to climate (and land use) drivers. This R Markdown document describes a workflow to apply machine learning techniques to RHESSys model output. This particular notebook uses random forest---see the other document for gradient boosting. The specific goal is to determine the most important relationships between RHESSys predictor variables and a chosen response variable in a programmatic, efficient, and reproducible manner. This is done by assessing variable importance within random forest models and the metric: permutation importance. 
 
-If you don’t know what permutation importance is right now, don’t worry! This workflow is written with ecologists in mind, not machine learning engineers or computer scientists. The details of random forest, gradient boosting, and permutation importance will be explained throughout the course of the document.
+No machine learning experience is required to make use of this workflow---the details of random forest and permutation importance will be explained throughout the course of the document.
 
-## Instructions for use:
+## Data Preparation Step:
 
-Use the `data_preparation_template.Rmd` to prepare your data before working through this notebook. It's important to note that this process relies on the specific variable names assigned throughout the workflow and problems will occur if variable names are changed. 
+If you have not already, use the `data_preparation_template.Rmd` to prepare your data before working through this notebook.
+
 
 # Setup
 
 ## renv:
 
 To help ensure reproducibility, the packages and package versions used to build this workflow have been saved via [`renv`](https://rstudio.github.io/renv/articles/renv.html). To download any missing packages and load the correct versions, run the command `renv::restore()` in the console. Doing so will not impact your package versions outside of this R Project. It may take several minutes depending on the number of discrepancies.
+
+## Load Packages
 
 ```{r setup, include = TRUE, warning=FALSE, message=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
@@ -50,20 +53,20 @@ library(rfUtilities)
 library(randomForestExplainer)
 ```
 
+# Data
+
+## Load Prepared Data
+
+Here, we load the data files created in the `data_preparation_template.Rmd`.
+
 ```{r}
 load(here::here("data", "input", "prepared_data.RData"))
 ```
 
+## Summarize Data
 
-# Data Description
+Next, we want to get a summary description of the data set. This step can be used to check if any variables do not have the expected range, magnitude, class, etc.
 
-Next, we want to get a summary description of the data set. This is crucial for many reasons:
-
-1.  Shows early on in the process if any variables do not have the expected range, magnitude, class, etc.
-
-2.  Provides information on data set characteristics that are important for decisions later on in the machine learning process.
-
-Here, we display summary statistics for the base climate scenario data.
 
 ```{r describe_data}
 source(here::here("R", "summarize_data.R"))
@@ -89,7 +92,7 @@ Similarly, the `auto_cor()` function works by computing a correlation matrix for
 First, we create data frames containing only the predictor variables to assist with the next steps.
 
 ```{r get_predictors}
-# Save data frames of predictor variables for first climate scenario
+# Save data frames of predictor variables
 df_num_preds <- df %>% 
   select(!response & where(is.numeric))
 
@@ -111,8 +114,6 @@ Below, there are two methods for setting preference order: (1) Manually creating
 2. Run this chunk to allow a preliminary random forest to automatically determine preference order.
 
 ```{r auto_preference_order, warning=FALSE}
-# First climate scenario
-
 # Find preliminary importance using random forest
 prelim_imp <- train(x = df %>% select(!response),
               y = df$response,
@@ -137,10 +138,6 @@ cor.threshold = 0.8
 ```{r remove_multicollinearity, warning = FALSE}
 source(here::here("R", "remove_vif.R"))
 source(here::here("R", "remove_cor.R"))
-
-# Removing variables with 0 variance
-no_var <- sapply(df_num_preds, function(col) var(col) == 0)
-df_num_preds <- df_num_preds[, !no_var]
 
 # Identifying variables with correlations or VIF above given thresholds
 vif_cor <- remove_cor(df_num_preds, cor.threshold = cor.threshold, pref_order) %>% 
