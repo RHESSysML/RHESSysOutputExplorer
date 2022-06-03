@@ -1,5 +1,5 @@
 ---
-title: "Feature Selection Framework"
+title: "Variable Importance Workflow, Sagehen - Random Forest"
 author: "Alex Clippinger, Wylie Hampson, Shale Hunter, Peter Menzies"
 date: '2022-06-03'
 output: 

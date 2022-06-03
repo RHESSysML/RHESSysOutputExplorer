@@ -1,5 +1,5 @@
 ---
-title: "Variable Importance Template"
+title: "Variable Importance Workflow, Chaparral - Random Forest"
 author: "Alex Clippinger, Wylie Hampson, Shale Hunter, Peter Menzies"
 date: '2022-06-03'
 output: 
