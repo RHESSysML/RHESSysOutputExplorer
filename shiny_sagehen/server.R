@@ -221,9 +221,9 @@ server <- function(input, output) {
   # Get correct RF model based on input
   partial_dep_model_obj <- reactive({
     if (input$partial_dep_model == "Normal Scenario") {
-      rf_clim0$finalModel
+      model_clim0$finalModel
     } else if (input$partial_dep_model == "+2 Degree C Scenario") {
-      rf_clim2$finalModel
+      model_clim2$finalModel
     }
   })
 

@@ -6,7 +6,7 @@
 #
 # Use this version if you have one scenario that is being explored. The app is 
 # currently designed to work given 2 datasets - df_raw and df. Additionally,
-# given 1 random forest model - rf. If these names are replaced in the workflow,
+# given 1 random forest model - model. If these names are replaced in the workflow,
 # they will also need to be updated in the global.R, server.R, and ui.R files for the
 # Shiny app within the shiny_standard folder to run properly.
 #
@@ -81,7 +81,7 @@ metadata <- readRDS(here::here("shiny_chap", "metadata.RDS")) %>%
 # Partial Dependence Plot Data --------------------------------------------
 
 df_reduced <- df %>% 
-  select(c(rownames(rf$finalModel$importance)))
+  select(c(rownames(model$finalModel$importance)))
 
 
 ######### Text for the welcome page ########## 

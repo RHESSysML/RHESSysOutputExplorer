@@ -170,7 +170,7 @@ The following functions output summary tables and plots showing variable selecti
 #### Variable Removal Summary Table
 
 ```{r vif_summary_table_0, warning=FALSE}
-summarize_var_removal(df_num_preds, table = TRUE)
+summarize_var_removal(df, select_variables, prelim_imp, table = TRUE)
 ```
 
 #### Cor Summary Plot
@@ -219,16 +219,18 @@ The best `mtry` value for each data set is used for the respective random forest
 ### Random Forest Models
 
 ```{r get_random_forests}
-rf <- train(x = df_reduced %>% select(!response),
-                y = df_reduced$response,
-                method = 'rf',
-                .mtry = bestmtry,
-                ntree = 500,
-                importance = TRUE,
-                replace = TRUE,
-                keep.forest = TRUE,  # necessary for permimp
-                keep.inbag = TRUE,  # necessary for permimp
-                trControl = trainControl(method = "none", seed = 4326)) # to use 10-fold cross validation, method = "cv", number = 10
+model <- train(
+  x = df_reduced %>% select(!response),
+  y = df_reduced$response,
+  method = "rf",
+  .mtry = bestmtry,
+  ntree = 500,
+  importance = TRUE,
+  replace = TRUE,
+  keep.forest = TRUE, # necessary for permimp
+  keep.inbag = TRUE, # necessary for permimp
+  trControl = trainControl(method = "none", seed = 4326)
+) # to use 10-fold cross validation, method = "cv", number = 10
 ```
 
 Assessing feature importance is a complex task with many possible approaches. Tree based models like random forest offer convenient "split-improvement" measures, like mean increase in purity and minimum depth, which are intrinsically derived during model construction. However, these have been shown to be biased towards variables with many categories or large value ranges (Strobl et al. 2007). Despite some of their shortcomings, these importance measures can provide insights are further explored at the end of this document.
@@ -244,7 +246,7 @@ As the primary measure of importance we instead use partial permutation importan
 4. Importance of the permuted variable is deemed to be the mean loss in accuracy when its values were permuted.
 
 ```{r variable_importance}
-imp <- varImp(rf$finalModel, scale = FALSE) %>% 
+imp <- varImp(model$finalModel, scale = FALSE) %>% 
   rownames_to_column("Variable") %>% 
   mutate(Rank = rank(-Overall))
 ```
@@ -257,9 +259,9 @@ The following section provides visualizations and statistics to evaluate the ran
 First, simply calling the random forest shows a summary of the results, including percent variance explained.
 
 ```{r}
-rf_fit <- round(tail(rf$finalModel$rsq, 1)*100, 2)
+model_fit <- round(tail(model$finalModel$rsq, 1)*100, 2)
 
-rf$finalModel
+model$finalModel
 ```
 
 The model for the base climate scenario explained `r rf0_fit`% of variance in NPP.
@@ -288,7 +290,7 @@ The capstone team created an application with a suite of interactive visualizati
 First, the following objects are saved for use in the app.
 
 ```{r save_model_output}
-save(rf, imp, file = here::here("data", "output", "model_output_chap.RData"))
+save(model, imp, file = here::here("data", "output", "model_output_chap.RData"))
 ```
 
 ```{r}

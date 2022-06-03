@@ -260,7 +260,7 @@ To get the best
 ```{r}
 best_grid <- gbm_model_cv$bestTune
 
-gbm_model_cv_best <- caret::train(
+model <- caret::train(
   x = x,
   y = y,
   trControl = fitControl,
@@ -287,10 +287,10 @@ As the primary measure of importance we instead use partial permutation importan
 
 ```{r}
 
-gbm_imp = varImp(gbm_model_cv_best, scale = FALSE)
-imp_gb = gbm_imp$importance
-imp_gb = imp_gb %>% mutate(Variable = row.names(imp_gb)) %>% 
-  filter(imp_gb$Overall != 0)
+gbm_imp = varImp(model, scale = FALSE)
+imp = gbm_imp$importance
+imp = imp %>% mutate(Variable = row.names(imp)) %>% 
+  filter(imp$Overall != 0)
 
 ```
 
@@ -300,7 +300,7 @@ imp_gb = imp_gb %>% mutate(Variable = row.names(imp_gb)) %>%
 The following section provides visualizations and statistics to evaluate the gradient boosting model performance.
 
 ```{r}
-gb_fit <- round(tail(gbm_model_cv_best$results$Rsquared, 1)*100, 2)
+gb_fit <- round(tail(model$results$Rsquared, 1)*100, 2)
 
 ```
 
@@ -311,14 +311,14 @@ The model explained `r gb_fit`% of variance in NPP.
 ```{r plot_imp}
 source(here::here("R", "plot_imp.R"))
 
-plot <- plot_imp(imp_gb)
+plot <- plot_imp(imp)
 plot
 ```
 
 
 ```{r}
-gbm_model_cv_best$results$RMSE
-gbm_model_cv_best$results$Rsquared
+model$results$RMSE
+model$results$Rsquared
 ```
 
 
@@ -331,7 +331,7 @@ The capstone team created an application with a suite of interactive visualizati
 First, the following objects are saved for use in the app.
 
 ```{r save_model_output}
-save(imp_gb, file = here::here("data", "output", "model_output_chap.RData"))
+save(model, imp, file = here::here("data", "output", "model_output_chap.RData"))
 ```
 
 Run the following code chunk to launch the Shiny app (note you will have to set `run_app` to TRUE):
