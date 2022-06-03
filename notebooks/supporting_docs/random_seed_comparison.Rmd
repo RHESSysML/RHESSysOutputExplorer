@@ -73,7 +73,7 @@ source(here::here("R", "remove_cor.R"))
 # Create list of selected variables
 clim0_vif <- remove_vif(df_clim0_num_preds, vif.threshold = vif.threshold, pref_order0)$selected.variables
 clim0_cor <- remove_cor(df_clim0_num_preds, cor.threshold = cor.threshold, pref_order0)$selected.variables
-clim0_select_variables <- unique(append(wy0_vif, wy0_cor))
+clim0_select_variables <- unique(append(clim0_vif, clim0_cor))
 
 # Remove numeric variables with multicollinearity
 df_clim0_reduced <- df_clim0 %>% 
