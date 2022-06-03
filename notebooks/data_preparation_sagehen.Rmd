@@ -116,7 +116,7 @@ Here is where the categorical variables from the `factor_vars` object (explained
 
 ```{r convert_to_factors}
 # Convert categorical variables to factors
-df_raw[,factor_vars] <- lapply(df_raw[,factor_vars], factor)
+df_raw[,factor_vars] <- sapply(df_raw[,factor_vars], factor)
 
 ```
 
@@ -158,7 +158,7 @@ df <- df %>%
 # Reorder response variables first and remove any unwanted variables
 df <- df %>% 
   select(response, everything()) %>%
-  select(-c(tavg, day, month, year, hillID, zoneID, patchID))
+  select(-c(tavg, day, month, year, zoneID, patchID))
 ```
 
 Here, we split our data into two separate data frames, one for each climate scenario. This will allow us to analyze the impact of  climate on variable importance by calculating different importance ranks for each climate scenario, and comparing how each variable gains or loses importance in a warming climate.
