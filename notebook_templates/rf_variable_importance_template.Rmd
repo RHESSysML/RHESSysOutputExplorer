@@ -25,14 +25,22 @@ If you have not already, use the `data_preparation_template.Rmd` to prepare your
 
 ## renv:
 
-To help ensure reproducibility, the packages and package versions used to build this workflow have been saved via [`renv`](https://rstudio.github.io/renv/articles/renv.html). To download any missing packages and load the correct versions, run the command `renv::restore()` in the console. Doing so will not impact your package versions outside of this R Project. It may take several minutes depending on the number of discrepancies.
+To help ensure reproducibility, the packages and package versions used to build this workflow have been saved via [`renv`](https://rstudio.github.io/renv/articles/renv.html). If this is your first time using the workflow and you have not yet run `renv::restore()`, please set `renv_restore` in the setup chunk below to `TRUE`. This will install any necessary packages and load the versions that were used to create the notebook. Doing so will not impact your package versions outside of this R Project. It may take several minutes depending on the number of discrepancies.
 
 ## Load Packages
 
 ```{r setup, include = TRUE, warning=FALSE, message=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-
 options(scipen = 999)
+
+# renv setup
+librarian::shelf("renv")
+#                 ↓ set to TRUE if you have not already run `renv::restore()`
+renv_restore <- FALSE
+
+if (renv_restore == TRUE) {
+  renv::restore()
+}
 
 # Standard packages
 library(tidyverse)
