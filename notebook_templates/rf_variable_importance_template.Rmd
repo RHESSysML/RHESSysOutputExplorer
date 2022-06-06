@@ -109,7 +109,7 @@ df_fpreds <- df %>%
   colnames()
 ```
 
-Below, there are two methods for setting preference order: (1) Manually creating an ordered vector of column names, or (2) Allowing a preliminary random forest method to determine preference order based on variable importance. Note that in the preliminary random forest, highly correlated variables will not produce accurate estimates of importance. However, we assume that relative importance is reasonably accurate to support the selection between highly correlated variables. The second method is used by default. 
+Below, there are two methods for setting preference order: (1) Manually creating an ordered vector of column names, or (2) Allowing a preliminary random forest to determine preference order based on variable importance. Note that in the preliminary random forest, highly correlated variables will not produce accurate estimates of importance. However, we assume that relative importance is reasonably accurate to support the selection between highly correlated variables. The second method is used by default. 
 
 1. Run this chunk to manually create an ordered vector of column names, starting with those of highest priority / greatest interest. The vector does not need to include the names of all predictors - only those that you would like to keep in the analysis. Set `set_manual_pref_order` to `TRUE` to run.
 
