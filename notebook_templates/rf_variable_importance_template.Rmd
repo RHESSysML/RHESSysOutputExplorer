@@ -12,9 +12,7 @@ output:
 
 # Introduction
 
-[RHESSys](https://github.com/RHESSys/RHESSys/wiki) output provides multiple variables that describe the response of ecosystem biogeochemical cycling and hydrology to climate (and land use) drivers. This R Markdown document describes a workflow to apply machine learning techniques to RHESSys model output. This particular notebook uses random forest---see the other document for gradient boosting. The specific goal is to determine the most important relationships between RHESSys predictor variables and a chosen response variable in a programmatic, efficient, and reproducible manner. This is done by assessing variable importance within random forest models and the metric: permutation importance. 
-
-No machine learning experience is required to make use of this workflow---the details of random forest and permutation importance will be explained throughout the course of the document.
+[RHESSys](https://github.com/RHESSys/RHESSys/wiki) output provides multiple variables that describe the response of ecosystem biogeochemical cycling and hydrology to climate (and land use) drivers. This R Markdown document describes a workflow to apply machine learning techniques to RHESSys model output. This particular notebook uses random forest---see the other document for gradient boosting. The specific goal is to determine the most important relationships between RHESSys predictor variables and a chosen response variable in a programmatic, efficient, and reproducible manner. This is done by assessing variable importance within random forest models using the metric: permutation importance. No machine learning experience is required to make use of this workflow---the details of random forest and permutation importance will be explained throughout the course of the document.
 
 ## Data Preparation Step:
 
@@ -111,7 +109,7 @@ df_fpreds <- df %>%
 
 Below, there are two methods for setting preference order: (1) Manually creating an ordered vector of column names, or (2) Allowing a preliminary random forest to determine preference order based on variable importance. Note that in the preliminary random forest, highly correlated variables will not produce accurate estimates of importance. However, we assume that relative importance is reasonably accurate to support the selection between highly correlated variables. The second method is used by default. 
 
-1. Run this chunk to manually create an ordered vector of column names, starting with those of highest priority / greatest interest. The vector does not need to include the names of all predictors - only those that you would like to keep in the analysis. Set `set_manual_pref_order` to `TRUE` to run.
+1. Run this chunk to manually create an ordered vector of column names, starting with those of highest priority / greatest interest. The vector does not need to include the names of all predictors---only those that you would like to keep in the analysis. Set `set_manual_pref_order` to `TRUE` to run.
 
 ```{r manual_preference_order}
 # OPTIONAL step
